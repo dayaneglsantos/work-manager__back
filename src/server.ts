@@ -1,0 +1,20 @@
+import express from 'express';
+import routes from './routes/index';
+const app = express();
+
+app.use((req, res, next) => {
+  if (
+    req.method === 'GET' ||
+    req.method === 'DELETE' ||
+    !req.headers['content-type']
+  ) {
+    return next();
+  }
+  express.json()(req, res, next);
+});
+
+app.use(routes);
+
+app.listen(4000, () => {
+  console.log('Server is running on port 4000');
+});
