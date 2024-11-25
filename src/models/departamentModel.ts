@@ -15,7 +15,7 @@ const Departament = {
   },
   async getAll() {
     const query = `SELECT * FROM departaments`;
-    const [result] = await sql.promise().query(query);
+    const [result] = await sql.promise().query<RowDataPacket[]>(query);
     return result;
   },
   async getById(id: number) {
@@ -26,7 +26,11 @@ const Departament = {
   async getByName(name: string) {
     const query = `SELECT * FROM departaments WHERE name = ?`;
     const [result] = await sql.promise().query<RowDataPacket[]>(query, [name]);
-    return result[0];
+    if (result[0] === undefined) {
+      return null;
+    } else {
+      return result[0];
+    }
   },
   async updateName(id: number, name: string) {
     const query = `UPDATE departaments SET name = ? WHERE id = ?`;

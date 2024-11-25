@@ -47,6 +47,22 @@ export const getDepartament = async (
   }
 };
 
+export const getAllDepartaments = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const departaments = await Departament.getAll();
+
+    return res.status(201).json(departaments);
+  } catch (err) {
+    const error = err as Error;
+    return res
+      .status(500)
+      .json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
 export const updateDepartament = async (
   req: Request,
   res: Response
