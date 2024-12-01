@@ -140,7 +140,7 @@ describe('Departament Controllers', () => {
     await getDepartament(req as Request, res as Response);
 
     expect(Departament.getById).toHaveBeenCalledWith(1);
-    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       id: 1,
       name: 'RH',
@@ -201,7 +201,7 @@ describe('Departament Controllers', () => {
 
     // Verificações
     expect(Departament.getAll).toHaveBeenCalledWith();
-    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith([
       {
         id: 1,

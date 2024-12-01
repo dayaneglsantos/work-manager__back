@@ -38,7 +38,7 @@ export const getDepartament = async (
   try {
     const departament = await Departament.getById(formatedId);
 
-    return res.status(201).json(departament);
+    return res.status(200).json(departament);
   } catch (err) {
     const error = err as Error;
     return res
@@ -54,7 +54,7 @@ export const getAllDepartaments = async (
   try {
     const departaments = await Departament.getAll();
 
-    return res.status(201).json(departaments);
+    return res.status(200).json(departaments);
   } catch (err) {
     const error = err as Error;
     return res

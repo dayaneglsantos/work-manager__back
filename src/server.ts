@@ -1,6 +1,6 @@
 import express from 'express';
 import routes from './routes/index';
-const app = express();
+export const app = express();
 
 app.use((req, res, next) => {
   if (
