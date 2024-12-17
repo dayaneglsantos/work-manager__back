@@ -79,7 +79,6 @@ const User = {
 
     const query = `Update users set ${setClause} WHERE id = ?`;
     const [result] = await sql.promise().query<ResultSetHeader>(query, values);
-    console.log(result);
     return result.affectedRows > 0;
   },
 };
