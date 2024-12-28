@@ -1,9 +1,13 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import User, { UserType } from '../models/userModel';
 import Address from '../models/addressModel';
 import hashPassword from '../services/hashService';
 
-export const createUser = async (req: Request, res: Response): Promise<any> => {
+export const createUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
   const {
     name,
     email,
@@ -135,7 +139,11 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
-      await User.update(id, fieldsToUpdate);
+      const user = await User.update(id, fieldsToUpdate);
+
+      if (!user) {
+        return res.status(404).json({ error: 'There is no user with this id' });
+      }
 
       return res.status(201).json({ message: 'User updated successfully' });
     } catch (error) {
