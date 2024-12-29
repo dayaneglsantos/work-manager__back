@@ -28,7 +28,7 @@ export const validateCreateUser = [
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
   body('supervisor_id').optional().isNumeric(),
-  body('departament_id').optional().isNumeric(),
+  body('department_id').optional().isNumeric(),
   body('current_salary').optional().isNumeric(),
   body('admission_date').optional().isString(),
 ];
@@ -86,7 +86,7 @@ export const validateUpdateUser = [
     .optional()
     .isNumeric()
     .withMessage('Supervisor ID must be a numeric value'),
-  body('departament_id')
+  body('department_id')
     .optional()
     .isNumeric()
     .withMessage('Department ID must be a numeric value'),

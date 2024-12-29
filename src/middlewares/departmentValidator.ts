@@ -1,6 +1,6 @@
 import { body } from 'express-validator';
 
-export const validateCreateDepartament = [
+export const validateCreateDepartment = [
   body('name')
     .notEmpty()
     .withMessage('Name is required')
@@ -12,7 +12,7 @@ export const validateCreateDepartament = [
     .isNumeric()
     .withMessage('Manager ID must be a numeric value'),
 ];
-export const validateUpdateDepartament = [
+export const validateUpdateDepartment = [
   body('name')
     .optional()
     .notEmpty()

@@ -19,7 +19,7 @@ export const createUser = async (
     profile_img,
     profile_id,
     supervisor_id,
-    departament_id,
+    department_id,
     current_position,
     current_salary,
     admission_date,
@@ -57,7 +57,7 @@ export const createUser = async (
       password: hashedPassword,
       profile_id,
       supervisor_id,
-      departament_id,
+      department_id,
       current_salary,
       admission_date,
       current_position,
@@ -109,7 +109,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
     password,
     profile_id,
     supervisor_id,
-    departament_id,
+    department_id,
     current_salary,
     admission_date,
     current_position,
@@ -130,7 +130,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
   if (password) fieldsToUpdate.password = await hashPassword(password);
   if (profile_id) fieldsToUpdate.profile_id = profile_id;
   if (supervisor_id) fieldsToUpdate.supervisor_id = supervisor_id;
-  if (departament_id) fieldsToUpdate.departament_id = departament_id;
+  if (department_id) fieldsToUpdate.department_id = department_id;
   if (current_salary) fieldsToUpdate.current_salary = current_salary;
   if (admission_date) fieldsToUpdate.admission_date = admission_date;
   if (current_position) fieldsToUpdate.current_position = current_position;

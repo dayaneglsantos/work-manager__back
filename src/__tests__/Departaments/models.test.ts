@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import Departament from '../../models/departamentModel';
+import Department from '../../models/departmentModel';
 import sql from '../../models/db';
 
 const mockQuery = vi.fn();
@@ -12,16 +12,16 @@ vi.mock('../../models/db', () => ({
   },
 }));
 
-describe('Departaments Models', () => {
-  it('should create a new departament', async () => {
+describe('Departments Models', () => {
+  it('should create a new department', async () => {
     mockQuery.mockResolvedValueOnce([{ insertId: 1 }]);
-    const departament = { name: 'teste', manager_id: 1 };
+    const department = { name: 'teste', manager_id: 1 };
 
-    const result = await Departament.create(departament);
+    const result = await Department.create(department);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'INSERT INTO departaments (name, manager_id) VALUES (?, ?)',
-      [departament.name, departament.manager_id]
+      'INSERT INTO departments (name, manager_id) VALUES (?, ?)',
+      [department.name, department.manager_id]
     );
     expect(result).toEqual({
       id: 1,
@@ -29,73 +29,70 @@ describe('Departaments Models', () => {
       manager_id: 1,
     });
   });
-  it('should edit a manager departament', async () => {
+  it('should edit a manager department', async () => {
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
     const newManagerId = 2;
-    const departamentId = 1;
+    const departmentId = 1;
 
-    const result = await Departament.updateManager(departamentId, newManagerId);
+    const result = await Department.updateManager(departmentId, newManagerId);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'UPDATE departaments SET manager_id = ? WHERE id = ?',
-      [newManagerId, departamentId]
+      'UPDATE departments SET manager_id = ? WHERE id = ?',
+      [newManagerId, departmentId]
     );
     expect(result).toEqual(true);
   });
-  it('should edit a name departament', async () => {
+  it('should edit a name department', async () => {
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
-    const newDepartamentName = 'teste2';
-    const departamentId = 1;
+    const newDepartmentName = 'teste2';
+    const departmentId = 1;
 
-    const result = await Departament.updateName(
-      departamentId,
-      newDepartamentName
-    );
+    const result = await Department.updateName(departmentId, newDepartmentName);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'UPDATE departaments SET name = ? WHERE id = ?',
-      [newDepartamentName, departamentId]
+      'UPDATE departments SET name = ? WHERE id = ?',
+      [newDepartmentName, departmentId]
     );
     expect(result).toEqual(true);
   });
-  it('should get a departament', async () => {
-    const mockDepartament = {
+  it('should get a department', async () => {
+    const mockDepartment = {
       id: 1,
       name: 'teste',
       manager_id: 1,
     };
-    mockQuery.mockResolvedValueOnce([[mockDepartament]]);
+    mockQuery.mockResolvedValueOnce([[mockDepartment]]);
 
-    const departamentId = 1;
+    const departmentId = 1;
 
-    const result = await Departament.getById(departamentId);
+    const result = await Department.getById(departmentId);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'SELECT * FROM departaments WHERE id = ?',
-      [departamentId]
+      'SELECT * FROM departments WHERE id = ?',
+      [departmentId]
     );
-    expect(result).toEqual(mockDepartament);
+    expect(result).toEqual(mockDepartment);
   });
-  it('should get a departament by name', async () => {
-    const mockDepartament = {
+  it('should get a department by name', async () => {
+    const mockDepartment = {
       id: 1,
       name: 'teste',
       manager_id: 1,
     };
-    mockQuery.mockResolvedValueOnce([[mockDepartament]]);
+    mockQuery.mockResolvedValueOnce([[mockDepartment]]);
 
-    const departamentName = 'teste';
+    const departmentName = 'teste';
 
-    const result = await Departament.getByName(departamentName);
+    const result = await Department.getByName(departmentName);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'SELECT * FROM departaments WHERE name = ?',
-      [departamentName]
+      'SELECT * FROM departments WHERE name = ?',
+      [departmentName]
     );
-    expect(result).toEqual(mockDepartament);
+    expect(result).toEqual(mockDepartment);
   });
-  it('should get all departaments', async () => {
-    const mockDepartament = [
+  it('should get all departments', async () => {
+    const mockDepartment = [
       {
         id: 1,
         name: 'teste',
@@ -107,24 +104,24 @@ describe('Departaments Models', () => {
         manager_id: 1,
       },
     ];
-    mockQuery.mockResolvedValueOnce([mockDepartament]);
+    mockQuery.mockResolvedValueOnce([mockDepartment]);
 
-    const result = await Departament.getAll();
+    const result = await Department.getAll();
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'SELECT * FROM departaments'
+      'SELECT * FROM departments'
     );
-    expect(result).toEqual(mockDepartament);
+    expect(result).toEqual(mockDepartment);
   });
-  it('should delete a departament', async () => {
+  it('should delete a department', async () => {
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
-    const departamentId = 1;
+    const departmentId = 1;
 
-    const result = await Departament.delete(departamentId);
+    const result = await Department.delete(departmentId);
 
     expect(sql.promise().query).toHaveBeenCalledWith(
-      'Delete FROM departaments WHERE id = ? LIMIT 1',
-      [departamentId]
+      'Delete FROM departments WHERE id = ? LIMIT 1',
+      [departmentId]
     );
     expect(result).toEqual(true);
   });

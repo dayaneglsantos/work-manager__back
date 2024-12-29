@@ -12,7 +12,7 @@ export interface UserType {
   password: string;
   profile_id: number | null;
   supervisor_id: number | null;
-  departament_id: number | null;
+  department_id: number | null;
   current_salary: string | null;
   admission_date: string | null;
   current_position: string | null;
@@ -37,10 +37,15 @@ const User = {
     const [result] = await sql.promise().query<RowDataPacket[]>(query, [email]);
     return result[0];
   },
+  async getUserSession(email: string) {
+    const query = `SELECT * FROM user_session WHERE email = ? LIMIT 1`;
+    const [result] = await sql.promise().query<RowDataPacket[]>(query, [email]);
+    return result[0];
+  },
   async create(user: UserType) {
     const query = `      INSERT INTO users (
         name, email, phone_number, address_id, emergency_contact, birthday, profile_img,
-        password, profile_id, supervisor_id, departament_id, current_salary,
+        password, profile_id, supervisor_id, department_id, current_salary,
         admission_date, current_position, employment_status, notes
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const values = [
@@ -54,7 +59,7 @@ const User = {
       user.password,
       user.profile_id,
       user.supervisor_id,
-      user.departament_id,
+      user.department_id,
       user.current_salary,
       user.admission_date,
       user.current_position,

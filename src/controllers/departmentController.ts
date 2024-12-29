@@ -1,25 +1,25 @@
 import { Request, Response } from 'express';
-import Departament from '../models/departamentModel';
+import Department from '../models/departmentModel';
 import User from '../models/userModel';
 
-export const createDepartament = async (
+export const createDepartment = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   const { name, manager_id } = req.body;
 
   try {
-    const existingDepartament = await Departament.getByName(name);
+    const existingDepartment = await Department.getByName(name);
 
-    if (existingDepartament) {
+    if (existingDepartment) {
       return res.status(400).json({
-        error: 'There is already a registered departament with this name.',
+        error: 'There is already a registered department with this name.',
       });
     }
 
-    const newDepartament = await Departament.create({ name, manager_id });
+    const newDepartment = await Department.create({ name, manager_id });
 
-    return res.status(201).json(newDepartament);
+    return res.status(201).json(newDepartment);
   } catch (err) {
     const error = err as Error;
     return res
@@ -28,7 +28,7 @@ export const createDepartament = async (
   }
 };
 
-export const getDepartament = async (
+export const getDepartment = async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -36,9 +36,9 @@ export const getDepartament = async (
   const formatedId = parseInt(id, 10);
 
   try {
-    const departament = await Departament.getById(formatedId);
+    const department = await Department.getById(formatedId);
 
-    return res.status(200).json(departament);
+    return res.status(200).json(department);
   } catch (err) {
     const error = err as Error;
     return res
@@ -47,14 +47,14 @@ export const getDepartament = async (
   }
 };
 
-export const getAllDepartaments = async (
+export const getAllDepartments = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const departaments = await Departament.getAll();
+    const departments = await Department.getAll();
 
-    return res.status(200).json(departaments);
+    return res.status(200).json(departments);
   } catch (err) {
     const error = err as Error;
     return res
@@ -63,7 +63,7 @@ export const getAllDepartaments = async (
   }
 };
 
-export const updateDepartament = async (
+export const updateDepartment = async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -72,15 +72,15 @@ export const updateDepartament = async (
   const formatedId = parseInt(id, 10);
 
   try {
-    const existingDepartament = await Departament.getById(formatedId);
+    const existingDepartment = await Department.getById(formatedId);
 
-    if (!existingDepartament) {
+    if (!existingDepartment) {
       return res.status(400).json({
-        error: 'There is no departament with this id.',
+        error: 'There is no department with this id.',
       });
     }
     if (name) {
-      await Departament.updateName(formatedId, name);
+      await Department.updateName(formatedId, name);
     }
     if (manager_id) {
       const existingUser = await User.getById(manager_id);
@@ -89,7 +89,7 @@ export const updateDepartament = async (
           error: 'There is no user with this id.',
         });
       }
-      await Departament.updateManager(formatedId, manager_id);
+      await Department.updateManager(formatedId, manager_id);
     }
 
     return res.status(201).json({ message: 'Department updated successfully' });
@@ -101,7 +101,7 @@ export const updateDepartament = async (
   }
 };
 
-export const deleteDepartament = async (
+export const deleteDepartment = async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -109,15 +109,15 @@ export const deleteDepartament = async (
   const formatedId = parseInt(id, 10);
 
   try {
-    const existingDepartament = await Departament.getById(formatedId);
+    const existingDepartment = await Department.getById(formatedId);
 
-    if (!existingDepartament) {
+    if (!existingDepartment) {
       return res.status(400).json({
-        error: 'There is no departament with this id.',
+        error: 'There is no department with this id.',
       });
     }
 
-    await Departament.delete(formatedId);
+    await Department.delete(formatedId);
 
     return res.status(201).json({ message: 'Department deleted successfully' });
   } catch (err) {
