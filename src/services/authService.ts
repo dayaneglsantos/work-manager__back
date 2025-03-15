@@ -27,7 +27,9 @@ const authenticateUser = async (
     return null;
   }
 
-  const token = jwt.sign({ userId: user.id }, secretKey);
+  const token = jwt.sign({ userId: user.id }, secretKey, {
+    expiresIn: '7d', // token expira em 7 dias
+  });
 
   return token;
 };
