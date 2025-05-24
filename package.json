@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server",
+    "start": "tsx src/server.ts",
     "test": "vitest",
     "coverage": "vitest run --coverage",
     "lint": "eslint './src/**/*.{js,ts}'",
