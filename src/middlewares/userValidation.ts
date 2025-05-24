@@ -98,4 +98,8 @@ export const validateUpdateUser = [
     .optional()
     .isString()
     .withMessage('Admission date must be a valid string'),
+  body('address')
+    .optional()
+    .isObject()
+    .withMessage('Address must be an object'),
 ];

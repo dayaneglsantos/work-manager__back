@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import User, { UserType } from '../models/userModel';
 import Address from '../models/addressModel';
 import hashPassword from '../services/hashService';
+import { updateAddress } from './addressController';
 
 export const createUser = async (
   req: Request,
@@ -115,6 +116,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
     current_position,
     employment_status,
     notes,
+    address,
   } = req.body;
 
   interface FieldsToUpdate extends Partial<UserType> {}
@@ -136,6 +138,17 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
   if (current_position) fieldsToUpdate.current_position = current_position;
   if (employment_status) fieldsToUpdate.employment_status = employment_status;
   if (notes) fieldsToUpdate.notes = notes;
+
+  if (address) {
+    const { address_id } = await User.getById(id);
+    const updatedAddress = await Address.update(address_id, address);
+    if (!updatedAddress) {
+      return res.status(400).json({ error: 'Failed to update address' });
+    }
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(201).json({ message: 'User updated successfully' });
+    }
+  }
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {

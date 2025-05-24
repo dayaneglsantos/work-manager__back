@@ -1,4 +1,4 @@
-import { ResultSetHeader } from 'mysql2';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import sql from './db';
 
 export interface Address {
@@ -25,6 +25,26 @@ const Address = {
 
     const [result] = await sql.promise().query<ResultSetHeader>(query, values);
     return result.insertId;
+  },
+  async getAddressById(id: number) {
+    const query = `SELECT * FROM addresses WHERE id = ?`;
+    const [result] = await sql.promise().query<RowDataPacket[]>(query, [id]);
+    return result[0] || null;
+  },
+  async getAll() {
+    const query = 'SELECT * FROM addresses';
+    const [result] = await sql.promise().query(query);
+    return result;
+  },
+  async update(id: string, fieldsToUpdate = {}) {
+    const columns = Object.keys(fieldsToUpdate);
+    const values = Object.values(fieldsToUpdate);
+    const setClause = columns.map((column) => `${column} = ?`).join(', ');
+    values.push(id);
+
+    const query = `Update addresses set ${setClause} WHERE id = ?`;
+    const [result] = await sql.promise().query<ResultSetHeader>(query, values);
+    return result.affectedRows > 0;
   },
 };
 
