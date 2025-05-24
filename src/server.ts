@@ -15,6 +15,8 @@ app.use((req, res, next) => {
 
 app.use(routes);
 
-app.listen(4000, () => {
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
   console.log('Server is running on port 4000');
 });
