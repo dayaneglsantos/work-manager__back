@@ -3,8 +3,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export default {
-  HOST: process.env.db_host,
-  USER: process.env.db_user,
-  PASSWORD: process.env.db_password,
-  DB: process.env.db_name,
+  HOST: process.env.DB_HOST,
+  USER: process.env.DB_USER,
+  PASSWORD: process.env.DB_PASSWORD,
+  DB: process.env.DB_NAME,
+  PORT: process.env.DB_PORT,
 };
