@@ -8,7 +8,7 @@ const authenticateUser = async (
   email: string,
   password: string
 ): Promise<string | null> => {
-  const secretKey = process.env.jwt_secret;
+  const secretKey = process.env.JWT_SECRET;
   const user = await User.getByEmail(email);
 
   if (typeof secretKey !== 'string') {
