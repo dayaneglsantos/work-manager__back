@@ -1,17 +1,13 @@
 import express from 'express';
 import routes from './routes/index';
+import cors from 'cors';
+import { corsConfiguration } from './config/cors';
+
 export const app = express();
 
-app.use((req, res, next) => {
-  if (
-    req.method === 'GET' ||
-    req.method === 'DELETE' ||
-    !req.headers['content-type']
-  ) {
-    return next();
-  }
-  express.json()(req, res, next);
-});
+app.use(cors(corsConfiguration));
+
+app.use(express.json());
 
 app.use(routes);
 
