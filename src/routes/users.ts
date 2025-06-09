@@ -9,7 +9,7 @@ import {
 import {
   validateCreateUser,
   validateUpdateUser,
-} from '../middlewares/userValidation';
+} from '../middlewares/userValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 
 const router = express.Router();

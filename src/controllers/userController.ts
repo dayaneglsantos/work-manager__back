@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import User, { UserType } from '../models/userModel';
+import User from '../models/userModel';
 import Address from '../models/addressModel';
 import hashPassword from '../services/hashService';
 import { updateAddress } from './addressController';
+import { UserType } from '../types/userType';
 
 export const createUser = async (
   req: Request,
