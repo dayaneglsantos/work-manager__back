@@ -1,9 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import User from '../models/userModel';
-import Address from '../models/addressModel';
 import hashPassword from '../services/hashService';
-import { updateAddress } from './addressController';
-import { UserType } from '../types/userType';
+import prisma from '../services/prisma';
+import { Prisma } from '@prisma/client';
 
 export const createUser = async (
   req: Request,
@@ -13,24 +11,27 @@ export const createUser = async (
   const {
     name,
     email,
-    phone_number,
-    emergency_contact,
+    phoneNumber,
     address,
-    birthday,
+    birthDate,
     password,
-    profile_img,
-    profile_id,
-    supervisor_id,
-    department_id,
-    current_position,
-    current_salary,
-    admission_date,
-    employment_status,
+    profileImage,
+    profileId,
+    supervisorId,
+    departmentId,
+    currentPosition,
+    currentSalary,
+    admissionDate,
+    employmentStatus,
     notes,
   } = req.body;
 
   try {
-    const existingUser = await User.getByEmail(email);
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
 
     if (existingUser) {
       return res
@@ -43,28 +44,28 @@ export const createUser = async (
       throw new Error('Failed to hash the password');
     }
 
-    const addressId = await Address.create(address);
-    if (!addressId) {
-      return res.status(400).json({ error: 'Failed to create address' });
-    }
-
-    const newUser = await User.create({
+    const userData = {
       name,
       email,
-      phone_number,
-      address_id: addressId,
-      emergency_contact,
-      birthday,
-      profile_img,
-      password: hashedPassword,
-      profile_id,
-      supervisor_id,
-      department_id,
-      current_salary,
-      admission_date,
-      current_position,
-      employment_status,
+      phoneNumber,
+      birthDate,
+      profileImage,
+      employmentStatus,
       notes,
+      currentPosition,
+      currentSalary,
+      admissionDate: new Date(admissionDate),
+      profile: { connect: { id: profileId } },
+      supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
+      address: {
+        create: address,
+      },
+      password: hashedPassword,
+      ...(departmentId && { department: { connect: { id: departmentId } } }),
+    };
+
+    const newUser = await prisma.user.create({
+      data: userData,
     });
 
     return res.status(201).json(newUser);
@@ -79,7 +80,17 @@ export const getUserById = async (
   const { id } = req.params;
 
   try {
-    const user = await User.getById(id);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        address: true,
+        profile: true,
+        supervisor: true,
+        department: true,
+      },
+    });
 
     if (!user) {
       return res.status(404).json({ error: 'There is no user with this id' });
@@ -92,7 +103,14 @@ export const getUserById = async (
 };
 export const getAllUses = async (req: Request, res: Response): Promise<any> => {
   try {
-    const users = await User.getAll();
+    const users = await prisma.user.findMany({
+      include: {
+        address: true,
+        profile: true,
+        supervisor: true,
+        department: true,
+      },
+    });
 
     return res.status(200).json(users);
   } catch (error) {
@@ -104,56 +122,57 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
   const {
     name,
     email,
-    phone_number,
-    emergency_contact,
+    phoneNumber,
     birthday,
-    profile_img,
+    profileImage,
     password,
-    profile_id,
-    supervisor_id,
-    department_id,
-    current_salary,
-    admission_date,
-    current_position,
-    employment_status,
+    profileId,
+    supervisorId,
+    departmentId,
+    currentSalary,
+    admissionDate,
+    currentPosition,
+    employmentStatus,
     notes,
     address,
   } = req.body;
 
-  interface FieldsToUpdate extends Partial<UserType> {}
-
-  const fieldsToUpdate: FieldsToUpdate = {};
+  const fieldsToUpdate: Prisma.UserUpdateInput = {};
 
   if (name) fieldsToUpdate.name = name;
   if (email) fieldsToUpdate.email = email;
-  if (phone_number) fieldsToUpdate.phone_number = phone_number;
-  if (emergency_contact) fieldsToUpdate.emergency_contact = emergency_contact;
-  if (birthday) fieldsToUpdate.birthday = birthday;
-  if (profile_img) fieldsToUpdate.profile_img = profile_img;
-  if (password) fieldsToUpdate.password = await hashPassword(password);
-  if (profile_id) fieldsToUpdate.profile_id = profile_id;
-  if (supervisor_id) fieldsToUpdate.supervisor_id = supervisor_id;
-  if (department_id) fieldsToUpdate.department_id = department_id;
-  if (current_salary) fieldsToUpdate.current_salary = current_salary;
-  if (admission_date) fieldsToUpdate.admission_date = admission_date;
-  if (current_position) fieldsToUpdate.current_position = current_position;
-  if (employment_status) fieldsToUpdate.employment_status = employment_status;
+  if (phoneNumber) fieldsToUpdate.phoneNumber = phoneNumber;
+  if (profileImage) fieldsToUpdate.profileImage = profileImage;
+  if (employmentStatus) fieldsToUpdate.employmentStatus = employmentStatus;
   if (notes) fieldsToUpdate.notes = notes;
 
+  if (birthday) fieldsToUpdate.birthDate = new Date(birthday);
+  if (admissionDate) fieldsToUpdate.admissionDate = admissionDate;
+  if (password) fieldsToUpdate.password = await hashPassword(password);
+
+  if (profileId) fieldsToUpdate.profile = { connect: { id: profileId } };
+  if (supervisorId)
+    fieldsToUpdate.supervisor = { connect: { id: supervisorId } };
+  if (departmentId)
+    fieldsToUpdate.department = { connect: { id: departmentId } };
+  if (currentSalary) fieldsToUpdate.currentSalary = currentSalary;
+  if (currentPosition) fieldsToUpdate.currentPosition = currentPosition;
+
+  // Upsert faz a atualização caso exista ou cria um novo registro se não existir
   if (address) {
-    const { address_id } = await User.getById(id);
-    const updatedAddress = await Address.update(address_id, address);
-    if (!updatedAddress) {
-      return res.status(400).json({ error: 'Failed to update address' });
-    }
-    if (Object.keys(fieldsToUpdate).length === 0) {
-      return res.status(201).json({ message: 'User updated successfully' });
-    }
+    fieldsToUpdate.address = {
+      update: address,
+    };
   }
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
-      const user = await User.update(id, fieldsToUpdate);
+      const user = await prisma.user.update({
+        where: {
+          id: Number(id),
+        },
+        data: fieldsToUpdate,
+      });
 
       if (!user) {
         return res.status(404).json({ error: 'There is no user with this id' });
@@ -163,6 +182,8 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
     } catch (error) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
+  } else {
+    return res.status(400).json({ error: 'No fields to update' });
   }
 };
 
@@ -170,7 +191,16 @@ export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
 
   try {
-    const user = await User.delete(id);
+    await prisma.address.delete({
+      where: {
+        userId: Number(id),
+      },
+    });
+    const user = await prisma.user.delete({
+      where: {
+        id: Number(id),
+      },
+    });
 
     if (!user) {
       return res.status(404).json({ error: 'There is no user with this id' });

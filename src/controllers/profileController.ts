@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Profile from '../models/profileModel';
+import prisma from '../services/prisma';
 
 export const createProfile = async (
   req: Request,
@@ -8,7 +8,11 @@ export const createProfile = async (
   const { name } = req.body;
 
   try {
-    const existingProfile = await Profile.getByName(name);
+    const existingProfile = await prisma.profile.findFirst({
+      where: {
+        name,
+      },
+    });
 
     if (existingProfile) {
       return res.status(400).json({
@@ -16,7 +20,7 @@ export const createProfile = async (
       });
     }
 
-    const newProfile = await Profile.create({ name: name });
+    const newProfile = await prisma.profile.create({ data: { name: name } });
 
     return res.status(201).json(newProfile);
   } catch (error) {
@@ -30,7 +34,11 @@ export const getProfileById = async (
   const { id } = req.params;
 
   try {
-    const profile = await Profile.getById(id);
+    const profile = await prisma.profile.findUnique({
+      where: {
+        id: Number(id),
+      },
+    });
 
     if (!profile) {
       return res
@@ -48,7 +56,7 @@ export const getAllProfiles = async (
   res: Response
 ): Promise<any> => {
   try {
-    const profiles = await Profile.getAll();
+    const profiles = await prisma.profile.findMany();
 
     return res.status(200).json(profiles);
   } catch (error) {
@@ -64,7 +72,10 @@ export const updateProfile = async (
 
   if (name) {
     try {
-      await Profile.update(id, name);
+      await prisma.profile.update({
+        where: { id: Number(id) },
+        data: { name: name },
+      });
 
       return res.status(201).json({ message: 'Profile updated successfully' });
     } catch (error) {
@@ -80,7 +91,9 @@ export const deleteProfile = async (
   const { id } = req.params;
 
   try {
-    const profile = await Profile.delete(id);
+    const profile = await prisma.profile.delete({
+      where: { id: Number(id) },
+    });
 
     if (!profile) {
       return res

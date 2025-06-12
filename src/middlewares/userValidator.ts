@@ -13,24 +13,33 @@ export const validateCreateUser = [
     .bail()
     .isEmail()
     .withMessage('Invalid email format'),
-  body('phone_number')
+  body('phoneNumber')
     .isString()
     .notEmpty()
     .withMessage('Phone number is required'),
-  body('emergency_contact').optional().isString(),
-  body('birthday').optional().isString(),
-  body('profile_img').optional().isString(),
+  body('birthDate').optional().isString(),
+  body('profileImage').optional().isString(),
   body('password').isString().notEmpty().withMessage('Password is required'),
-  body('profile_id')
+  body('profileId')
     .notEmpty()
     .withMessage('Profile ID is required')
     .bail()
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
-  body('supervisor_id').optional().isNumeric(),
-  body('department_id').optional().isNumeric(),
-  body('current_salary').optional().isNumeric(),
-  body('admission_date').optional().isString(),
+  body('supervisorId').optional().isNumeric(),
+  body('departmentId').optional().isNumeric(),
+  body('currentSalary')
+    .notEmpty()
+    .isNumeric()
+    .withMessage('Current salary is required'),
+  body('admissionDate')
+    .notEmpty()
+    .isString()
+    .withMessage('Admission date is required'),
+  body('currentPosition')
+    .notEmpty()
+    .isString()
+    .withMessage('Current position is required'),
 ];
 
 export const validateUpdateUser = [
@@ -49,22 +58,18 @@ export const validateUpdateUser = [
     .bail()
     .isEmail()
     .withMessage('Invalid email format'),
-  body('phone_number')
+  body('phoneNumber')
     .optional()
     .notEmpty()
     .withMessage('Phone number cannot be empty')
     .bail()
     .isString()
     .withMessage('Phone number must be a string'),
-  body('emergency_contact')
+  body('birthDate')
     .optional()
     .isString()
-    .withMessage('Emergency contact must be a string'),
-  body('birthday')
-    .optional()
-    .isString()
-    .withMessage('Birthday must be a valid string'),
-  body('profile_img')
+    .withMessage('Birth date must be a valid string'),
+  body('profileImage')
     .optional()
     .isString()
     .withMessage('Profile image must be a valid URL'),
@@ -75,26 +80,26 @@ export const validateUpdateUser = [
     .bail()
     .isString()
     .withMessage('Password must be a string'),
-  body('profile_id')
+  body('profileId')
     .optional()
     .notEmpty()
     .withMessage('Profile ID cannot be empty')
     .bail()
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
-  body('supervisor_id')
+  body('supervisorId')
     .optional()
     .isNumeric()
     .withMessage('Supervisor ID must be a numeric value'),
-  body('department_id')
+  body('departmentId')
     .optional()
     .isNumeric()
     .withMessage('Department ID must be a numeric value'),
-  body('current_salary')
+  body('currentSalary')
     .optional()
     .isNumeric()
     .withMessage('Current salary must be a numeric value'),
-  body('admission_date')
+  body('admissionDate')
     .optional()
     .isString()
     .withMessage('Admission date must be a valid string'),

@@ -1,15 +1,18 @@
 import { Request, Response } from 'express';
-import Department from '../models/departmentModel';
-import User from '../models/userModel';
+import prisma from '../services/prisma';
 
 export const createDepartment = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  const { name, manager_id } = req.body;
+  const { name, managerId } = req.body;
 
   try {
-    const existingDepartment = await Department.getByName(name);
+    const existingDepartment = await prisma.department.findUnique({
+      where: {
+        name,
+      },
+    });
 
     if (existingDepartment) {
       return res.status(400).json({
@@ -17,7 +20,21 @@ export const createDepartment = async (
       });
     }
 
-    const newDepartment = await Department.create({ name, manager_id });
+    const existingUser = await prisma.user.findUnique({
+      where: { id: managerId },
+    });
+    if (!existingUser) {
+      return res.status(400).json({
+        error: 'There is no user with this id.',
+      });
+    }
+
+    const newDepartment = await prisma.department.create({
+      data: {
+        name,
+        manager: { connect: { id: managerId } },
+      },
+    });
 
     return res.status(201).json(newDepartment);
   } catch (err) {
@@ -36,7 +53,11 @@ export const getDepartment = async (
   const formatedId = parseInt(id, 10);
 
   try {
-    const department = await Department.getById(formatedId);
+    const department = await prisma.department.findUnique({
+      where: {
+        id: formatedId,
+      },
+    });
 
     return res.status(200).json(department);
   } catch (err) {
@@ -52,7 +73,7 @@ export const getAllDepartments = async (
   res: Response
 ): Promise<any> => {
   try {
-    const departments = await Department.getAll();
+    const departments = await prisma.department.findMany();
 
     return res.status(200).json(departments);
   } catch (err) {
@@ -68,11 +89,15 @@ export const updateDepartment = async (
   res: Response
 ): Promise<any> => {
   const { id } = req.params;
-  const { name, manager_id } = req.body;
+  const { name, managerId } = req.body;
   const formatedId = parseInt(id, 10);
 
   try {
-    const existingDepartment = await Department.getById(formatedId);
+    const existingDepartment = await prisma.department.findUnique({
+      where: {
+        id: formatedId,
+      },
+    });
 
     if (!existingDepartment) {
       return res.status(400).json({
@@ -80,16 +105,24 @@ export const updateDepartment = async (
       });
     }
     if (name) {
-      await Department.updateName(formatedId, name);
+      await prisma.department.update({
+        where: { id: formatedId },
+        data: { name },
+      });
     }
-    if (manager_id) {
-      const existingUser = await User.getById(manager_id);
+    if (managerId) {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: managerId },
+      });
       if (!existingUser) {
         return res.status(400).json({
           error: 'There is no user with this id.',
         });
       }
-      await Department.updateManager(formatedId, manager_id);
+      await prisma.department.update({
+        where: { id: formatedId },
+        data: { managerId: managerId },
+      });
     }
 
     return res.status(201).json({ message: 'Department updated successfully' });
@@ -109,7 +142,11 @@ export const deleteDepartment = async (
   const formatedId = parseInt(id, 10);
 
   try {
-    const existingDepartment = await Department.getById(formatedId);
+    const existingDepartment = await prisma.department.findUnique({
+      where: {
+        id: formatedId,
+      },
+    });
 
     if (!existingDepartment) {
       return res.status(400).json({
@@ -117,7 +154,11 @@ export const deleteDepartment = async (
       });
     }
 
-    await Department.delete(formatedId);
+    await prisma.department.delete({
+      where: {
+        id: formatedId,
+      },
+    });
 
     return res.status(201).json({ message: 'Department deleted successfully' });
   } catch (err) {

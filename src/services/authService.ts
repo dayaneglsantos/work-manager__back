@@ -1,7 +1,7 @@
-import User from '../models/userModel';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import prisma from './prisma';
 dotenv.config();
 
 const authenticateUser = async (
@@ -9,7 +9,9 @@ const authenticateUser = async (
   password: string
 ): Promise<string | null> => {
   const secretKey = process.env.JWT_SECRET;
-  const user = await User.getByEmail(email);
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
 
   if (typeof secretKey !== 'string') {
     throw new Error(

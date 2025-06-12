@@ -7,8 +7,10 @@ export const validateCreateDepartment = [
     .bail()
     .isString()
     .withMessage('Name must be a string'),
-  body('manager_id')
-    .optional()
+  body('managerId')
+    .notEmpty()
+    .withMessage('Manager ID is required')
+    .bail()
     .isNumeric()
     .withMessage('Manager ID must be a numeric value'),
 ];
@@ -20,7 +22,7 @@ export const validateUpdateDepartment = [
     .bail()
     .isString()
     .withMessage('Name must be a string'),
-  body('manager_id')
+  body('managerId')
     .optional()
     .isNumeric()
     .withMessage('Manager ID must be a numeric value'),

@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== Enums =====================
+enum EmploymentStatus {
+  active // Usuário ativo
+  terminated // Usuário demitido
+  resigned // Usuário pediu demissão
+  onLeave // Usuário de licença
+}
+
+// ===================== Models =====================
+
+model Profile {
+  @@map("profiles")
+
+  id Int @id @default(autoincrement())
+  name String @unique
+  users User[]
+}
+
+model Department {
+  @@map("departments") // Mapeia o nome da tabela para "departments"
+
+  id Int @id @default(autoincrement())
+  name String @unique
+  managerId Int @unique @map("manager_id")
+  manager User @relation("UserManager",fields: [managerId], references: [id])
+  users User[] @relation("UserDepartment") // Faz a relação com os usuários do departamento
+}
+
+model User {
+  @@map("users") // Mapeia o nome da tabela para "users"
+
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  phoneNumber String? @map("phone_number")
+  address Address?
+  birthDate DateTime? @map("birth_date")
+  password String
+  profileImage String? @map("profile_image")
+  managedDepartament Department? @relation("UserManager")// Faz a relação com o departamento que o usuário gerencia
+  profileId Int @unique @map("profile_id")
+  profile Profile @relation(fields: [profileId], references: [id])
+  supervisorId Int? @map("supervisor_id")
+  supervisor User? @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  supervisedUsers User[] @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
+  departmentId Int? @unique @map("department_id")
+  department Department? @relation("UserDepartment", fields: [departmentId], references: [id])
+  currentSalary Float @map("current_salary")
+  admissionDate DateTime @map("admission_date")
+  currentPosition String @map("current_position")
+  employmentStatus EmploymentStatus @default(active) @map("employment_status")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  notes String?
+}
+
+model Address {
+  @@map("addresses") // Mapeia o nome da tabela para "addresses"
+
+  id Int @id @default(autoincrement())
+  zipCode String @map("zip_code")
+  state String
+  city String
+  street String
+  number Int
+  complement String?
+  userId Int @unique @map("user_id")
+  user User @relation(fields: [userId], references: [id])
+}
