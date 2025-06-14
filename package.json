@@ -11,6 +11,9 @@
     "lint": "eslint './src/**/*.{js,ts}'",
     "format": "prettier --write './src/**/*.{js,ts,json}'"
   },
+  "prisma": {
+    "seed": "node --loader ts-node/esm prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
