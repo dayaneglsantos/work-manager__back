@@ -29,6 +29,7 @@ model Profile {
   id Int @id @default(autoincrement())
   name String @unique
   users User[]
+  permissions ProfilePermission[] // Relaciona com a tabela de permissões de perfil
 }
 
 model Department {
@@ -67,6 +68,7 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   notes String?
+  customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
 }
 
 model Address {
@@ -81,4 +83,56 @@ model Address {
   complement String?
   userId Int @unique @map("user_id")
   user User @relation(fields: [userId], references: [id])
+}
+
+model PermissionAction {
+  @@map("permission_actions") // Mapeia o nome da tabela para "permission_actions"
+
+  id Int @id @default(autoincrement())
+  name String @unique
+  permissions Permission[]
+}
+
+model PermissionType {
+  @@map("permission_types") // Mapeia o nome da tabela para "permission_types"
+
+  id Int @id @default(autoincrement())
+  name String @unique
+  permissions Permission[]
+
+}
+
+model Permission {
+  @@map("permissions") // Mapeia o nome da tabela para "permissions"
+
+  id Int @id @default(autoincrement())
+  name String @unique
+  actionId Int @map("action_id")
+  action PermissionAction @relation(fields: [actionId], references: [id])
+  typeId Int @map("type_id")
+  type PermissionType @relation(fields: [typeId], references: [id])
+  permissions ProfilePermission[] // Relaciona com a tabela de permissões de perfil
+  customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+}
+
+model ProfilePermission {
+  @@map("profile_permissions") // Mapeia o nome da tabela para "profile_permissions"
+
+  id Int @id @default(autoincrement())
+  profileId Int @map("profile_id")
+  profile Profile @relation(fields: [profileId], references: [id])
+  permissionId Int @map("permission_id")
+  permission Permission @relation(fields: [permissionId], references: [id])
+  hasPermission Boolean @default(false) @map("has_permission")
+}
+
+model CustomPermission {
+  @@map("custom_permissions") // Mapeia o nome da tabela para "custom_permissions"
+
+  id Int @id @default(autoincrement())
+  userId Int @map("user_id")
+  user User @relation(fields: [userId], references: [id])
+  permissionId Int @map("permission_id")
+  permission Permission @relation(fields: [permissionId], references: [id])
+  hasPermission Boolean @default(false) @map("has_permission")
 }

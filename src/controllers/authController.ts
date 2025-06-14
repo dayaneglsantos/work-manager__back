@@ -11,25 +11,52 @@ const login = async (req: Request, res: Response): Promise<any> => {
     if (token) {
       const user = await prisma.user.findUnique({
         where: { email },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phoneNumber: true,
-          birthDate: true,
-          profileImage: true,
-          employmentStatus: true,
-          notes: true,
-          currentPosition: true,
-          currentSalary: true,
-          admissionDate: true,
-          profileId: true,
-          supervisorId: true,
-          departmentId: true,
+        include: {
+          profile: true,
+          address: true,
         },
       });
 
-      return res.status(200).json({ token, ...user });
+      const customPermission = await prisma.customPermission.findMany({
+        where: { userId: user?.id },
+        include: {
+          permission: true,
+        },
+      });
+
+      const profilePermissions = await prisma.profilePermission.findMany({
+        where: { profileId: user?.profileId },
+        include: {
+          permission: true,
+        },
+      });
+
+      let userPermissions = [];
+
+      // Se existirem permissões personalizadas, elas terão prioridade sobre as permissões do perfil
+      if (customPermission.length > 0) {
+        const updatedPermissions = profilePermissions.map((perm) => {
+          if (
+            customPermission.some((cp) => cp.permissionId === perm.permissionId)
+          ) {
+            perm.hasPermission = !perm.hasPermission;
+          }
+          return perm;
+        });
+        userPermissions = updatedPermissions.map((profilePermission) => ({
+          name: profilePermission.permission.name,
+          hasPermission: profilePermission.hasPermission,
+        }));
+      } else {
+        userPermissions = profilePermissions.map((profilePermission) => ({
+          name: profilePermission.permission.name,
+          hasPermission: profilePermission.hasPermission,
+        }));
+      }
+
+      return res
+        .status(200)
+        .json({ token, permissions: userPermissions, ...user });
     } else {
       return res.status(401).json({ error: 'Invalid email or password' });
     }

@@ -9,9 +9,10 @@
       "server": "localhost",
       "port": 3306,
       "driver": "MySQL",
-      "name": "Work Manager",
-      "database": "work_manager",
-      "username": "root"
+      "name": "Work Manager Local",
+      "database": "work_manager_local",
+      "username": "root",
+      "password": ""
     }
   ]
 }
