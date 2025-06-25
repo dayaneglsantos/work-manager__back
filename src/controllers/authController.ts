@@ -14,6 +14,16 @@ const login = async (req: Request, res: Response): Promise<any> => {
         include: {
           profile: true,
           address: true,
+          department: true,
+        },
+        omit: {
+          password: true,
+          createdAt: true,
+          updatedAt: true,
+          profileId: true,
+          departmentId: true,
+          supervisorId: true,
+          currentSalary: true,
         },
       });
 
@@ -25,7 +35,7 @@ const login = async (req: Request, res: Response): Promise<any> => {
       });
 
       const profilePermissions = await prisma.profilePermission.findMany({
-        where: { profileId: user?.profileId },
+        where: { profileId: user?.profile.id },
         include: {
           permission: true,
         },
