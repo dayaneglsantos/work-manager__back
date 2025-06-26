@@ -1,0 +1,86 @@
+# 'services' é a seção principal onde definimos todos os nossos contêineres.
+# Cada serviço (app, db) rodará em um contêiner separado.
+services:
+  # --- SERVIÇO DO BANCO DE DADOS MYSQL ---
+  # Aqui definimos o contêiner para o nosso banco de dados.
+  db:
+    # 'image' especifica qual imagem do Docker Hub será usada.
+    # 'mysql:8.0' é a imagem oficial do MySQL na versão 8.0.
+    image: mysql:8.0
+
+    # 'command' sobrescreve o comando padrão da imagem.
+    # Esta linha específica é um "truque" importante para garantir a compatibilidade
+    # de autenticação do MySQL 8 com o Prisma e outros clientes Node.js.
+    command: --default-authentication-plugin=mysql_native_password
+
+    # 'restart: always' garante que o contêiner do banco de dados será reiniciado
+    # automaticamente se ele parar por algum motivo (ex: erro, reinicialização do sistema).
+    # restart: always
+
+    # 'environment' define as variáveis de ambiente DENTRO do contêiner do 'db'.
+    # A imagem do MySQL usa essas variáveis para se autoconfigurar na primeira vez que sobe.
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+
+    # 'ports' mapeia portas entre a sua máquina (HOST) e o contêiner (CONTAINER).
+    # Formato: "HOST:CONTAINER"
+    # "3306:3306" permite que você conecte ferramentas de banco de dados (DBeaver, Workbench)
+    # que estão no seu PC à porta 3306 do contêiner MySQL.
+    ports:
+      - '${DB_PORT}:3306'
+
+    # 'volumes' são usados para persistir dados.
+    # Sem isso, todos os dados do banco seriam perdidos ao remover o contêiner.
+    # 'db_data:/var/lib/mysql' cria um "volume nomeado" chamado 'db_data' e o associa
+    # à pasta onde o MySQL guarda seus dados dentro do contêiner.
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # --- SERVIÇO DA APLICAÇÃO NODE.JS ---
+  # Aqui definimos o contêiner para a nossa aplicação back-end.
+  app:
+    # 'build: .' instrui o Docker Compose a construir uma imagem a partir do
+    # arquivo 'Dockerfile' localizado no diretório atual ('.').
+    build: .
+
+    # 'command' sobrescreve a instrução CMD do Dockerfile.
+    # Isso é PERFEITO para desenvolvimento, pois usamos o script 'dev'
+    # que tem o 'watch' para reiniciar o servidor a cada alteração no código.
+    command: npm run dev
+
+    # Mapeia a porta 3000 do seu PC para a porta 3000 do contêiner,
+    # permitindo que você acesse sua API via http://localhost:3000 no navegador.
+    # Lembre-se de usar a porta que sua aplicação realmente escuta.
+    ports:
+      - '${APP_PORT}:3000'
+
+    # Define as variáveis de ambiente para o contêiner da 'app'.
+    environment:
+      # Esta é a string de conexão que o Prisma usará.
+      # O segredo está em '@db': em vez de 'localhost', usamos o nome do serviço
+      # do banco de dados ('db'), pois o Docker Compose cria uma rede interna
+      # onde os serviços se comunicam por seus nomes.
+      DATABASE_URL: 'mysql://${DB_USERNAME}:${DB_PASSWORD}@db:3306/${DB_DATABASE}'
+
+    # Volumes para a aplicação. Essencial para o live-reloading.
+    volumes:
+      # '.:/app' espelha o diretório atual do seu PC para a pasta /app no contêiner.
+      # Quando você edita um arquivo no seu PC, ele é atualizado no contêiner instantaneamente.
+      - .:/app
+      # Esta é uma exceção importante: diz ao Docker para NÃO mapear a pasta
+      # 'node_modules' do seu PC. Em vez disso, o contêiner usará a pasta
+      # 'node_modules' que foi criada pelo comando 'RUN npm install' no Dockerfile.
+      # Isso evita conflitos de dependências entre sistemas operacionais.
+      - /app/node_modules
+
+    # 'depends_on' define a ordem de inicialização dos serviços.
+    # 'app' só será iniciado DEPOIS que o serviço 'db' estiver pronto.
+    # Isso evita que sua aplicação tente se conectar a um banco que ainda não subiu.
+    depends_on:
+      - db
+
+# Esta seção no final do arquivo declara formalmente os volumes nomeados
+# que foram usados nos serviços. É uma boa prática para gerenciamento.
+volumes:
+  db_data:

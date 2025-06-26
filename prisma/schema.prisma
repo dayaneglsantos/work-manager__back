@@ -13,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===================== Enums =====================
+// ========================================================= ENUMS =========================================================
 enum EmploymentStatus {
   active // Usuário ativo
   terminated // Usuário demitido
@@ -21,118 +21,199 @@ enum EmploymentStatus {
   onLeave // Usuário de licença
 }
 
-// ===================== Models =====================
+enum TaskStatus {
+  todo // A fazer
+  inProgress // Em progresso
+  done // Concluído
+  paused // Pausado
+}
+
+enum TaskPriority {
+  low // Baixa prioridade
+  medium // Média prioridade
+  high // Alta prioridade
+}
+
+enum CommentType {
+  task // Comentário em tarefa
+  post // Comentário em post
+}
+
+// ========================================================= MODELS =========================================================
 
 model Profile {
-  @@map("profiles")
-
-  id Int @id @default(autoincrement())
-  name String @unique
-  users User[]
+  id          Int                 @id @default(autoincrement())
+  name        String              @unique
+  users       User[]
   permissions ProfilePermission[] // Relaciona com a tabela de permissões de perfil
+
+  @@map("profiles")
 }
 
 model Department {
-  @@map("departments") // Mapeia o nome da tabela para "departments"
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  managerId Int    @unique @map("manager_id")
+  manager   User   @relation("UserManager", fields: [managerId], references: [id])
+  users     User[] @relation("UserDepartment") // Faz a relação com os usuários do departamento
+  tasks     Task[] // Tarefas relacionadas ao departamento
 
-  id Int @id @default(autoincrement())
-  name String @unique
-  managerId Int @unique @map("manager_id")
-  manager User @relation("UserManager",fields: [managerId], references: [id])
-  users User[] @relation("UserDepartment") // Faz a relação com os usuários do departamento
+  @@map("departments") // Mapeia o nome da tabela para "departments"
 }
 
 model User {
-  @@map("users") // Mapeia o nome da tabela para "users"
+  id                 Int                @id @default(autoincrement())
+  name               String
+  email              String             @unique
+  phoneNumber        String?            @map("phone_number")
+  address            Address?
+  birthDate          DateTime?          @map("birth_date")
+  password           String
+  profileImage       String?            @map("profile_image")
+  managedDepartament Department?        @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
+  profileId          Int                @unique @map("profile_id")
+  profile            Profile            @relation(fields: [profileId], references: [id])
+  supervisorId       Int?               @map("supervisor_id")
+  supervisor         User?              @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  supervisedUsers    User[]             @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
+  departmentId       Int?               @unique @map("department_id")
+  department         Department?        @relation("UserDepartment", fields: [departmentId], references: [id])
+  currentSalary      Float              @map("current_salary")
+  admissionDate      DateTime           @map("admission_date")
+  currentPosition    String             @map("current_position")
+  employmentStatus   EmploymentStatus   @default(active) @map("employment_status")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  notes              String?
+  customPermissions  CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+  tasksAssigned      Task[]             @relation("TaskAssignee") // Tarefas atribuídas ao usuário
+  tasksCreated       Task[]             @relation("TaskCreator") // Tarefas criadas pelo usuário
+  changedTasks       TaskHistory[] // Histórico de mudanças de tarefas
+  comments           Comment[] // Comentários feitos pelo usuário
 
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique
-  phoneNumber String? @map("phone_number")
-  address Address?
-  birthDate DateTime? @map("birth_date")
-  password String
-  profileImage String? @map("profile_image")
-  managedDepartament Department? @relation("UserManager")// Faz a relação com o departamento que o usuário gerencia
-  profileId Int @unique @map("profile_id")
-  profile Profile @relation(fields: [profileId], references: [id])
-  supervisorId Int? @map("supervisor_id")
-  supervisor User? @relation("UserSupervisor", fields: [supervisorId], references: [id])
-  supervisedUsers User[] @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
-  departmentId Int? @unique @map("department_id")
-  department Department? @relation("UserDepartment", fields: [departmentId], references: [id])
-  currentSalary Float @map("current_salary")
-  admissionDate DateTime @map("admission_date")
-  currentPosition String @map("current_position")
-  employmentStatus EmploymentStatus @default(active) @map("employment_status")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  notes String?
-  customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+  @@map("users") // Mapeia o nome da tabela para "users"
 }
 
 model Address {
-  @@map("addresses") // Mapeia o nome da tabela para "addresses"
-
-  id Int @id @default(autoincrement())
-  zipCode String @map("zip_code")
-  state String
-  city String
-  street String
-  number Int
+  id         Int     @id @default(autoincrement())
+  zipCode    String  @map("zip_code")
+  state      String
+  city       String
+  street     String
+  number     Int
   complement String?
-  userId Int @unique @map("user_id")
-  user User @relation(fields: [userId], references: [id])
+  userId     Int     @unique @map("user_id")
+  user       User    @relation(fields: [userId], references: [id])
+
+  @@map("addresses") // Mapeia o nome da tabela para "addresses"
 }
 
 model PermissionAction {
-  @@map("permission_actions") // Mapeia o nome da tabela para "permission_actions"
-
-  id Int @id @default(autoincrement())
-  name String @unique
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
   permissions Permission[]
+
+  @@map("permission_actions") // Mapeia o nome da tabela para "permission_actions"
 }
 
 model PermissionType {
-  @@map("permission_types") // Mapeia o nome da tabela para "permission_types"
-
-  id Int @id @default(autoincrement())
-  name String @unique
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
   permissions Permission[]
 
+  @@map("permission_types") // Mapeia o nome da tabela para "permission_types"
 }
 
 model Permission {
-  @@map("permissions") // Mapeia o nome da tabela para "permissions"
-
-  id Int @id @default(autoincrement())
-  name String @unique
-  actionId Int @map("action_id")
-  action PermissionAction @relation(fields: [actionId], references: [id])
-  typeId Int @map("type_id")
-  type PermissionType @relation(fields: [typeId], references: [id])
-  permissions ProfilePermission[] // Relaciona com a tabela de permissões de perfil
+  id                Int                 @id @default(autoincrement())
+  name              String              @unique
+  actionId          Int                 @map("action_id")
+  action            PermissionAction    @relation(fields: [actionId], references: [id])
+  typeId            Int                 @map("type_id")
+  type              PermissionType      @relation(fields: [typeId], references: [id])
+  permissions       ProfilePermission[] // Relaciona com a tabela de permissões de perfil
   customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+
+  @@map("permissions") // Mapeia o nome da tabela para "permissions"
 }
 
 model ProfilePermission {
-  @@map("profile_permissions") // Mapeia o nome da tabela para "profile_permissions"
+  id            Int        @id @default(autoincrement())
+  profileId     Int        @map("profile_id")
+  profile       Profile    @relation(fields: [profileId], references: [id])
+  permissionId  Int        @map("permission_id")
+  permission    Permission @relation(fields: [permissionId], references: [id])
+  hasPermission Boolean    @default(false) @map("has_permission")
 
-  id Int @id @default(autoincrement())
-  profileId Int @map("profile_id")
-  profile Profile @relation(fields: [profileId], references: [id])
-  permissionId Int @map("permission_id")
-  permission Permission @relation(fields: [permissionId], references: [id])
-  hasPermission Boolean @default(false) @map("has_permission")
+  @@map("profile_permissions") // Mapeia o nome da tabela para "profile_permissions"
 }
 
 model CustomPermission {
-  @@map("custom_permissions") // Mapeia o nome da tabela para "custom_permissions"
+  id            Int        @id @default(autoincrement())
+  userId        Int        @map("user_id")
+  user          User       @relation(fields: [userId], references: [id])
+  permissionId  Int        @map("permission_id")
+  permission    Permission @relation(fields: [permissionId], references: [id])
+  hasPermission Boolean    @default(false) @map("has_permission")
 
-  id Int @id @default(autoincrement())
-  userId Int @map("user_id")
-  user User @relation(fields: [userId], references: [id])
-  permissionId Int @map("permission_id")
-  permission Permission @relation(fields: [permissionId], references: [id])
-  hasPermission Boolean @default(false) @map("has_permission")
+  @@map("custom_permissions") // Mapeia o nome da tabela para "custom_permissions"
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Task {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String?       @db.Text
+  status       TaskStatus    @default(todo)
+  deadline     DateTime?
+  assigneeId   Int?          @map("assignee_id")
+  creatorId    Int           @map("creator_id")
+  departmentId Int?          @map("department_id")
+  assignee     User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator      User          @relation("TaskCreator", fields: [creatorId], references: [id])
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  priority     TaskPriority  @default(medium)
+  history      TaskHistory[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@map("tasks")
+}
+
+model TaskHistory {
+  id          Int      @id @default(autoincrement())
+  taskId      Int      @map("task_id")
+  task        Task     @relation(fields: [taskId], references: [id])
+  field       String
+  oldValue    String?  @map("old_value")
+  newValue    String?  @map("new_value")
+  changedById Int      @map("changed_by_id")
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  changedAt   DateTime @default(now()) @map("changed_at")
+
+  @@map("tasks_history")
+}
+
+model Comment {
+  id              Int         @id @default(autoincrement())
+  content         String      @db.Text
+  authorId        Int         @map("author_id")
+  author          User        @relation(fields: [authorId], references: [id])
+  referencedId    Int?        @map("referenced_id") // ID do item referenciado (tarefa, post...)
+  referencedType  CommentType @map("referenced_type") // Tipo de referência (tarefa, post...)
+  parentCommentId Int?        @map("parent_comment_id") // ID do comentário pai, se for uma resposta
+  parentComment   Comment?    @relation("CommentReply", fields: [parentCommentId], references: [id])
+  reply           Comment[]   @relation("CommentReply") // Respostas a comentários
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([referencedType, referencedId]) // Índice para facilitar buscas por tipo e ID referenciado
+  @@index([parentCommentId]) // Índice para facilitar buscas por comentários pai
+  @@map("comments")
 }
