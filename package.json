@@ -4,7 +4,7 @@
   "main": "server.ts",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/server.ts --legacy-watch",
     "start": "tsx src/server.ts",
     "test": "vitest",
     "coverage": "vitest run --coverage",
