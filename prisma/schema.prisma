@@ -160,9 +160,10 @@ model CustomPermission {
 }
 
 model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  tasks     TaskTag[] // Relaciona com as tarefas que possuem essa tag
+  createdAt DateTime  @default(now()) @map("created_at")
 }
 
 model Task {
@@ -179,10 +180,22 @@ model Task {
   department   Department?   @relation(fields: [departmentId], references: [id])
   priority     TaskPriority  @default(medium)
   history      TaskHistory[]
+  tags         TaskTag[] // Relaciona com as tags da tarefa
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
   @@map("tasks")
+}
+
+model TaskTag {
+  id     Int  @id @default(autoincrement())
+  taskId Int  @map("task_id")
+  task   Task @relation(fields: [taskId], references: [id])
+  tagId  Int  @map("tag_id")
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@unique([taskId, tagId]) // Garante que uma tarefa não tenha a mesma tag mais de uma vez
+  @@map("tasks_tags") // Mapeia o nome da tabela para "tasks_tags"
 }
 
 model TaskHistory {
