@@ -222,6 +222,7 @@ model Comment {
   parentCommentId Int?        @map("parent_comment_id") // ID do comentário pai, se for uma resposta
   parentComment   Comment?    @relation("CommentReply", fields: [parentCommentId], references: [id])
   reply           Comment[]   @relation("CommentReply") // Respostas a comentários
+  edited          Boolean     @default(false)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

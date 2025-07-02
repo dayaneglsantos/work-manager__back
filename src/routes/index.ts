@@ -7,7 +7,8 @@ import addressRoutes from './addresses';
 import permissionRoutes from './permissions';
 import tagsRoutes from './tags';
 import tasksRoutes from './tasks';
-import taskTagRoutes from './taskTag';
+import tasksTagsRoutes from './tasksTags';
+import commentsRoutes from './comments';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use(addressRoutes);
 router.use(permissionRoutes);
 router.use(tagsRoutes);
 router.use(tasksRoutes);
-router.use(taskTagRoutes);
+router.use(tasksTagsRoutes);
+router.use(commentsRoutes);
 
 export default router;
