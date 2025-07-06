@@ -10,7 +10,7 @@ import { validationHandler } from '../middlewares/validationHandler';
 import {
   validateCreateComment,
   validateUpdateComment,
-} from '../middlewares/commentValidator';
+} from '../middlewares/validators/commentValidator';
 
 const router = express.Router();
 

@@ -28,7 +28,7 @@ import {
   validateUpdatePermission,
   validateUpdatePermissionAction,
   validateUpdateProfilePermission,
-} from '../middlewares/permissionValidator';
+} from '../middlewares/validators/permissionValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 
 const router = express.Router();

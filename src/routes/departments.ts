@@ -9,7 +9,7 @@ import {
 import {
   validateCreateDepartment,
   validateUpdateDepartment,
-} from '../middlewares/departmentValidator';
+} from '../middlewares/validators/departmentValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 
 const router = express.Router();

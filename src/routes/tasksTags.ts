@@ -6,7 +6,7 @@ import {
   getTaskTagById,
 } from '../controllers/taskTagController';
 import { validationHandler } from '../middlewares/validationHandler';
-import { validateTaskTag } from '../middlewares/taskTagValidator';
+import { validateTaskTag } from '../middlewares/validators/taskTagValidator';
 
 const router = express.Router();
 

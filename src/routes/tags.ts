@@ -9,7 +9,7 @@ import {
 import {
   validateCreateTag,
   validateUpdateTag,
-} from '../middlewares/tagValidator';
+} from '../middlewares/validators/tagValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 
 const router = express.Router();

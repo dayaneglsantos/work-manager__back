@@ -9,6 +9,7 @@ import tagsRoutes from './tags';
 import tasksRoutes from './tasks';
 import tasksTagsRoutes from './tasksTags';
 import commentsRoutes from './comments';
+import taskHistories from './taskHistories';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -24,5 +25,6 @@ router.use(tagsRoutes);
 router.use(tasksRoutes);
 router.use(tasksTagsRoutes);
 router.use(commentsRoutes);
+router.use(taskHistories);
 
 export default router;

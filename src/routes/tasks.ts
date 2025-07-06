@@ -9,7 +9,7 @@ import {
 import {
   validateCreateTask,
   validateUpdateTask,
-} from '../middlewares/taskValidator';
+} from '../middlewares/validators/taskValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 
 const router = express.Router();

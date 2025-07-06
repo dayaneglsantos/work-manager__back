@@ -138,35 +138,55 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
     priority,
     tagsId,
   } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+  const currentUserId = getUserIdFromToken(token!);
 
   const fieldsToUpdate: Prisma.TaskUpdateInput = {};
 
   if (title) fieldsToUpdate.title = title;
-  if (description) fieldsToUpdate.description = description;
-  if (status) fieldsToUpdate.status = status;
-  if (deadline) fieldsToUpdate.deadline = deadline;
-  if (assigneeId) fieldsToUpdate.assignee = assigneeId;
-  if (priority) fieldsToUpdate.priority = priority;
 
-  // Upsert faz a atualização caso exista ou cria um novo registro se não existir
-  // if (address) {
-  //   fieldsToUpdate.address = {
-  //     update: address,
-  //   };
-  // }
+  // INCLURI PARTE DO HISTÓRICO
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
-      const task = await prisma.task.update({
+      const task = await prisma.task.findFirst({
         where: {
           id: Number(id),
         },
-        data: fieldsToUpdate,
       });
 
       if (!task) {
         return res.status(404).json({ error: 'There is no task with this id' });
       }
+
+      const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
+
+      Object.keys(fieldsToUpdate).forEach(async (field) => {
+        const updateField = Object.keys(field)[0];
+        const oldValue = task[updateField as keyof typeof task];
+        const newValue = field[updateField as keyof typeof field];
+
+        if (oldValue !== newValue) {
+          historyRecords.push({
+            taskId: task.id,
+            field: updateField,
+            oldValue: oldValue ? String(oldValue) : null,
+            newValue: newValue ? String(newValue) : null,
+            changedById: currentUserId,
+            changedAt: new Date(),
+          });
+        }
+
+        const updatedTask = await prisma.$transaction([
+          prisma.task.update({
+            where: { id: Number(id) },
+            data: fieldsToUpdate,
+          }),
+          prisma.taskHistory.createMany({
+            data: historyRecords,
+          }),
+        ]);
+      });
 
       return res.status(201).json({ message: 'Task updated successfully' });
     } catch (error) {
