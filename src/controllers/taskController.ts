@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { getUserIdFromToken } from '../services/getUserIdFromToken';
 
 export const createTask = async (
@@ -79,8 +77,23 @@ export const getTaskById = async (
           },
         },
         department: true,
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    // Retornar direto em tags em vez de um objeto com tag
+    if (task && task.tags) {
+      task.tags = task.tags.map((item: any) => item.tag);
+    }
 
     if (!task) {
       return res.status(404).json({ error: 'There is no task with this id' });
@@ -115,6 +128,7 @@ export const getAllTasks = async (
           },
         },
         department: true,
+        tags: true,
         // tags: true,
       },
     });
@@ -142,10 +156,26 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
   const currentUserId = getUserIdFromToken(token!);
 
   const fieldsToUpdate: Prisma.TaskUpdateInput = {};
+  const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
 
   if (title) fieldsToUpdate.title = title;
+  if (description) fieldsToUpdate.description = description;
+  if (status) fieldsToUpdate.status = status;
+  if (deadline) fieldsToUpdate.deadline = new Date(deadline);
+  if (priority) fieldsToUpdate.priority = priority;
+  if (assigneeId) {
+    fieldsToUpdate.assignee = { connect: { id: assigneeId } };
+  }
+  if (departmentId) {
+    fieldsToUpdate.department = { connect: { id: departmentId } };
+  }
 
-  // INCLURI PARTE DO HISTÓRICO
+  const transactions: any[] = [
+    prisma.task.update({
+      where: { id: Number(id) },
+      data: fieldsToUpdate,
+    }),
+  ];
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
@@ -159,9 +189,7 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
         return res.status(404).json({ error: 'There is no task with this id' });
       }
 
-      const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
-
-      Object.keys(fieldsToUpdate).forEach(async (field) => {
+      Object.keys(fieldsToUpdate).forEach((field) => {
         const updateField = Object.keys(field)[0];
         const oldValue = task[updateField as keyof typeof task];
         const newValue = field[updateField as keyof typeof field];
@@ -176,17 +204,49 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
             changedAt: new Date(),
           });
         }
-
-        const updatedTask = await prisma.$transaction([
-          prisma.task.update({
-            where: { id: Number(id) },
-            data: fieldsToUpdate,
-          }),
-          prisma.taskHistory.createMany({
-            data: historyRecords,
-          }),
-        ]);
       });
+
+      if (tagsId && tagsId.length > 0) {
+        // Buscar tags já existentes
+        const existingTagIds = await prisma.taskTag.findMany({
+          where: { taskId: Number(id) },
+          select: { tagId: true },
+        });
+        const existingTagsInTask = existingTagIds.map((tag) => tag.tagId);
+
+        const tagsToAdd = tagsId.filter(
+          (tagId: number) => !existingTagsInTask.includes(tagId)
+        );
+        const tagsToRemove = existingTagsInTask.filter(
+          (tagId: number) => !tagsId.includes(tagId)
+        );
+
+        // Adicionar novas tags
+        if (tagsToAdd.length > 0) {
+          transactions.push(
+            prisma.taskTag.createMany({
+              data: tagsToAdd.map((tagId: number) => ({
+                taskId: Number(id),
+                tagId,
+              })),
+            })
+          );
+        }
+
+        // Remover tags que não estão mais associadas
+        if (tagsToRemove.length > 0) {
+          transactions.push(
+            prisma.taskTag.deleteMany({
+              where: {
+                taskId: Number(id),
+                tagId: { in: tagsToRemove },
+              },
+            })
+          );
+        }
+      }
+
+      const updatedTask = await prisma.$transaction(transactions);
 
       return res.status(201).json({ message: 'Task updated successfully' });
     } catch (error) {
