@@ -217,8 +217,8 @@ model Comment {
   content         String      @db.Text
   authorId        Int         @map("author_id")
   author          User        @relation(fields: [authorId], references: [id])
-  referencedId    Int?        @map("referenced_id") // ID do item referenciado (tarefa, post...)
-  referencedType  CommentType @map("referenced_type") // Tipo de referência (tarefa, post...)
+  referenceId     Int?        @map("reference_id") // ID do item referenciado (tarefa, post...)
+  referenceType   CommentType @map("reference_type") // Tipo de referência (tarefa, post...)
   parentCommentId Int?        @map("parent_comment_id") // ID do comentário pai, se for uma resposta
   parentComment   Comment?    @relation("CommentReply", fields: [parentCommentId], references: [id])
   reply           Comment[]   @relation("CommentReply") // Respostas a comentários
@@ -227,7 +227,7 @@ model Comment {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([referencedType, referencedId]) // Índice para facilitar buscas por tipo e ID referenciado
+  @@index([referenceType, referenceId]) // Índice para facilitar buscas por tipo e ID referenciado
   @@index([parentCommentId]) // Índice para facilitar buscas por comentários pai
   @@map("comments")
 }

@@ -22,7 +22,7 @@ async function main() {
   });
 
   // =================================== USERS ===================================
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       name: 'Master Admin',
       email: 'admin@teste.com',
@@ -45,7 +45,7 @@ async function main() {
       },
     },
   });
-  await prisma.user.create({
+  const gerente = await prisma.user.create({
     data: {
       name: 'Gerente',
       email: 'gerente@teste.com',
@@ -68,7 +68,7 @@ async function main() {
       },
     },
   });
-  await prisma.user.create({
+  const supervisor = await prisma.user.create({
     data: {
       name: 'Supervisor',
       email: 'supervisor@teste.com',
@@ -82,7 +82,7 @@ async function main() {
       phoneNumber: '61999999999',
     },
   });
-  await prisma.user.create({
+  const funcionario = await prisma.user.create({
     data: {
       name: 'Funcionario',
       email: 'funcionario@teste.com',
@@ -102,141 +102,154 @@ async function main() {
     data: [
       {
         name: 'RH',
-        managerId: 1,
+        managerId: gerente.id,
       },
       {
         name: 'TI',
-        managerId: 2,
+        managerId: supervisor.id,
       },
       {
         name: 'Financeiro',
-        managerId: 3,
+        managerId: admin.id,
       },
     ],
   });
 
   // =================================== PERMISSION ACTIONS ===================================
-  await prisma.permissionAction.createMany({
-    data: [
-      { name: 'create' },
-      { name: 'read' },
-      { name: 'update' },
-      { name: 'delete' },
-    ],
+  const createPermissionAction = await prisma.permissionAction.create({
+    data: { name: 'create' },
+  });
+  const readPermissionAction = await prisma.permissionAction.create({
+    data: { name: 'read' },
+  });
+  const updatePermissionAction = await prisma.permissionAction.create({
+    data: { name: 'update' },
+  });
+  const deletePermissionAction = await prisma.permissionAction.create({
+    data: { name: 'delete' },
   });
 
-  // =================================== PERMISSION ACTIONS ===================================
-  await prisma.permissionType.createMany({
-    data: [{ name: 'users' }, { name: 'departments' }, { name: 'profiles' }],
+  // =================================== PERMISSION TYPES ===================================
+  const userPermissionType = await prisma.permissionType.create({
+    data: { name: 'users' },
+  });
+  const ddepartmentPermissionType = await prisma.permissionType.create({
+    data: { name: 'departments' },
+  });
+  const profilePermissionType = await prisma.permissionType.create({
+    data: { name: 'profiles' },
   });
 
-  // =================================== PERMISSION ACTIONS ===================================
-  await prisma.permission.createMany({
-    data: [
-      {
-        actionId: 1, // create
-        typeId: 1, // users
-        name: 'create-users',
-      },
-      {
-        actionId: 2, // read
-        typeId: 1, // users
-        name: 'read-users',
-      },
-      {
-        actionId: 3, // update
-        typeId: 1, // users
-        name: 'update-users',
-      },
-      {
-        actionId: 4, // delete
-        typeId: 1, // users
-        name: 'delete-users',
-      },
-      {
-        actionId: 1, // create
-        typeId: 2, // departments
-        name: 'create-departments',
-      },
-      {
-        actionId: 2, // read
-        typeId: 2, // departments
-        name: 'read-departments',
-      },
-      {
-        actionId: 3, // update
-        typeId: 2, // departments
-        name: 'update-departments',
-      },
-      {
-        actionId: 4, // delete
-        typeId: 2, // departments
-        name: 'delete-departments',
-      },
-      {
-        actionId: 1, // create
-        typeId: 3, // profiles
-        name: 'create-profiles',
-      },
-      {
-        actionId: 2, // read
-        typeId: 3, // profiles
-        name: 'read-profiles',
-      },
-      {
-        actionId: 3, // update
-        typeId: 3, // profiles
-        name: 'update-profiles',
-      },
-      {
-        actionId: 4, // delete
-        typeId: 3, // profiles
-        name: 'delete-profiles',
-      },
-    ],
+  // =================================== PERMISSION ===================================
+  const createUserPermission = await prisma.permission.create({
+    data: {
+      actionId: createPermissionAction.id, // create
+      typeId: userPermissionType.id, // users
+      name: 'create-users',
+    },
+  });
+
+  const readUserPermission = await prisma.permission.create({
+    data: {
+      actionId: readPermissionAction.id, // read
+      typeId: userPermissionType.id, // users
+      name: 'read-users',
+    },
+  });
+
+  const updateUserPermission = await prisma.permission.create({
+    data: {
+      actionId: updatePermissionAction.id, // update
+      typeId: userPermissionType.id, // users
+      name: 'update-users',
+    },
+  });
+
+  const deleteUserPermission = await prisma.permission.create({
+    data: {
+      actionId: deletePermissionAction.id, // delete
+      typeId: userPermissionType.id, // users
+      name: 'delete-users',
+    },
+  });
+  const createDepartmentPermission = await prisma.permission.create({
+    data: {
+      actionId: createPermissionAction.id, // create
+      typeId: ddepartmentPermissionType.id, // departments
+      name: 'create-departments',
+    },
+  });
+  const readDepartmentPermission = await prisma.permission.create({
+    data: {
+      actionId: readPermissionAction.id, // read
+      typeId: ddepartmentPermissionType.id, // departments
+      name: 'read-departments',
+    },
+  });
+  const updateDepartmentPermission = await prisma.permission.create({
+    data: {
+      actionId: updatePermissionAction.id, // update
+      typeId: ddepartmentPermissionType.id, // departments
+      name: 'update-departments',
+    },
+  });
+  const deleteDepartmentPermission = await prisma.permission.create({
+    data: {
+      actionId: deletePermissionAction.id, // delete
+      typeId: ddepartmentPermissionType.id, // departments
+      name: 'delete-departments',
+    },
+  });
+  const createProfilePermission = await prisma.permission.create({
+    data: {
+      actionId: createPermissionAction.id, // create
+      typeId: profilePermissionType.id, // profiles
+      name: 'create-profiles',
+    },
+  });
+  const readProfilePermission = await prisma.permission.create({
+    data: {
+      actionId: readPermissionAction.id, // read
+      typeId: profilePermissionType.id, // profiles
+      name: 'read-profiles',
+    },
+  });
+  const updateProfilePermission = await prisma.permission.create({
+    data: {
+      actionId: updatePermissionAction.id, // update
+      typeId: profilePermissionType.id, // profiles
+      name: 'update-profiles',
+    },
+  });
+  const deleteProfilePermission = await prisma.permission.create({
+    data: {
+      actionId: deletePermissionAction.id, // delete
+      typeId: profilePermissionType.id, // profiles
+      name: 'delete-profiles',
+    },
   });
 
   // =================================== PROFILE PERMISSIONS ===================================
-  await prisma.profilePermission.createMany({
+  const adminPermissions = await prisma.profilePermission.createMany({
     data: [
       {
         profileId: adminProfile.id,
-        permissionId: 1, // create users
+        permissionId: createUserPermission.id, // create users
         hasPermission: true,
       },
       {
         profileId: adminProfile.id,
-        permissionId: 2, // read users
+        permissionId: readUserPermission.id, // read users
         hasPermission: true,
       },
       {
         profileId: adminProfile.id,
-        permissionId: 3, // update users
+        permissionId: updateUserPermission.id, // update users
         hasPermission: true,
       },
       {
         profileId: adminProfile.id,
-        permissionId: 4, // delete users
-        hasPermission: true,
-      },
-      {
-        profileId: gerenteProfile.id,
-        permissionId: 2, // read users
-        hasPermission: true,
-      },
-      {
-        profileId: gerenteProfile.id,
-        permissionId: 3, // update users
-        hasPermission: true,
-      },
-      {
-        profileId: supervisorProfile.id,
-        permissionId: 2, // read users
-        hasPermission: true,
-      },
-      {
-        profileId: funcionarioProfile.id,
-        permissionId: 2, // read users
+        permissionId: deleteUserPermission.id, // delete users
         hasPermission: true,
       },
     ],
@@ -246,11 +259,36 @@ async function main() {
   await prisma.customPermission.createMany({
     data: [
       {
-        userId: 1, // Master Admin
-        permissionId: 1, // create users
+        userId: admin.id, // Master Admin
+        permissionId: createUserPermission.id, // create users
         hasPermission: false,
       },
     ],
+  });
+
+  // =================================== TAGS ===================================
+  await prisma.tag.createMany({
+    data: [{ name: 'Tag 1' }, { name: 'Tag 2' }, { name: 'Tag 3' }],
+  });
+  // =================================== TASKS ===================================
+  const task1 = await prisma.task.create({
+    data: {
+      title: 'Task 1',
+      description: 'This is the first task.',
+      priority: 'medium',
+      assigneeId: admin.id,
+      creatorId: supervisor.id,
+    },
+  });
+
+  // =================================== COMMENTS ===================================
+  const comment1 = await prisma.comment.create({
+    data: {
+      content: 'This is a comment on the user.',
+      authorId: admin.id,
+      referenceId: task1.id,
+      referenceType: 'task',
+    },
   });
 }
 
