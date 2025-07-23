@@ -26,20 +26,15 @@ export const validateCreateTask = [
 ];
 
 export const validateUpdateTask = [
-  body('title')
-    .notEmpty()
-    .withMessage('Title is required')
-    .bail()
-    .isString()
-    .withMessage('Title must be a string'),
+  body('title').optional().isString().withMessage('Title must be a string'),
   body('description')
     .optional()
     .isString()
     .withMessage('Description must be a string'),
   body('status')
     .optional()
-    .isIn(['pending', 'in-progress', 'completed'])
-    .withMessage('Status must be one of: pending, in-progress, completed'),
+    .isIn(['todo', 'inProgress', 'done', 'paused'])
+    .withMessage('Status must be one of: todo, inProgress, done, paused'),
   body('deadline')
     .optional()
     .isISO8601()

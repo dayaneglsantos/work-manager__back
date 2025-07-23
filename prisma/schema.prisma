@@ -13,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ========================================================= ENUMS =========================================================
+// ==================================================== ENUMS ====================================================
 enum EmploymentStatus {
   active // Usuário ativo
   terminated // Usuário demitido
@@ -39,7 +39,7 @@ enum CommentType {
   post // Comentário em post
 }
 
-// ========================================================= MODELS =========================================================
+// ==================================================== MODELS ====================================================
 
 model Profile {
   id          Int                 @id @default(autoincrement())
@@ -71,12 +71,12 @@ model User {
   password           String
   profileImage       String?            @map("profile_image")
   managedDepartament Department?        @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
-  profileId          Int                @unique @map("profile_id")
+  profileId          Int                @map("profile_id")
   profile            Profile            @relation(fields: [profileId], references: [id])
   supervisorId       Int?               @map("supervisor_id")
   supervisor         User?              @relation("UserSupervisor", fields: [supervisorId], references: [id])
   supervisedUsers    User[]             @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
-  departmentId       Int?               @unique @map("department_id")
+  departmentId       Int?               @map("department_id")
   department         Department?        @relation("UserDepartment", fields: [departmentId], references: [id])
   currentSalary      Float              @map("current_salary")
   admissionDate      DateTime           @map("admission_date")

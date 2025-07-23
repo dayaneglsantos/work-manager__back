@@ -108,8 +108,38 @@ export const getAllTasks = async (
   req: Request,
   res: Response
 ): Promise<any> => {
+  // Filtros
+  const { status, search } = req.query;
+
+  const filters: any = {};
+
+  if (status) {
+    const statusArray = typeof status === 'string' ? status.split(',') : [];
+    if (statusArray.length > 0) {
+      filters.status = { in: statusArray };
+    }
+  }
+  if (search) {
+    filters.OR = [
+      { title: { contains: search } },
+      // { description: { contains: search } },
+    ];
+  }
+
+  // Paginação
+  const page = Number(req.query.page) || 1;
+  const pageSize = Number(req.query.pageSize) || 10;
+  const skip = (page - 1) * pageSize; // Calcular o número de registros a pular
+  const take = pageSize; // Número de registros a retornar
+
   try {
+    const totalCount = await prisma.task.count({
+      where: filters,
+    });
     const tasks = await prisma.task.findMany({
+      skip,
+      take,
+      where: filters,
       include: {
         assignee: {
           select: {
@@ -131,9 +161,28 @@ export const getAllTasks = async (
         tags: true,
         // tags: true,
       },
+      omit: {
+        assigneeId: true,
+        creatorId: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
-    return res.status(200).json(tasks);
+    const response = {
+      data: tasks,
+      meta: {
+        page, // Página atual
+        pageSize, // Tamanho da página
+        totalCount, // Total de registros
+        totalPages: Math.ceil(totalCount / pageSize), // Total de páginas
+        hasNextPage: skip + take < totalCount, // Se há próxima página
+        hasPreviousPage: page > 1, // Se há página anterior
+      },
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
