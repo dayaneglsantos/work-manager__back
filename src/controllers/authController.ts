@@ -1,8 +1,9 @@
 import { Response, Request } from 'express';
 import authenticateUser from '../services/authService';
 import prisma from '../services/prisma';
+import jwt from 'jsonwebtoken';
 
-const login = async (req: Request, res: Response): Promise<any> => {
+export const login = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body;
 
   try {
@@ -68,6 +69,8 @@ const login = async (req: Request, res: Response): Promise<any> => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // Expira em 7 dias
+        // maxAge: 60 * 1000, // expira em 1 minuto
       });
 
       return res
@@ -80,5 +83,3 @@ const login = async (req: Request, res: Response): Promise<any> => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
-export default login;
