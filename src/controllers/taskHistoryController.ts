@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
-import { CommentType } from '@prisma/client';
 import { getUserIdFromToken } from '../services/getUserIdFromToken';
 
 export const createTaskHistory = async (
@@ -39,121 +37,58 @@ export const createTaskHistory = async (
 
     return res.status(201).json(newTaskHistory);
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-// export const getCommentById = async (
-//   req: Request,
-//   res: Response
-// ): Promise<any> => {
-//   const { id } = req.params;
 
-//   try {
-//     const comment = await prisma.comment.findUnique({
-//       where: {
-//         id: Number(id),
-//       },
-//       include: {
-//         author: {
-//           select: {
-//             id: true,
-//             name: true,
-//           },
-//         },
-//       },
-//       omit: {
-//         authorId: true,
-//       },
-//     });
+// ----------------------------------------------------------------
 
-//     if (!comment) {
-//       return res
-//         .status(404)
-//         .json({ error: 'There is no comment with this id' });
-//     }
+export const getTaskHistoryById = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { id } = req.params;
 
-//     return res.status(200).json(comment);
-//   } catch (error) {
-//     return res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };
-// export const getAllComments = async (
-//   req: Request,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const users = await prisma.comment.findMany({
-//       include: {
-//         author: {
-//           select: {
-//             id: true,
-//             name: true,
-//           },
-//         },
-//       },
-//       omit: {
-//         authorId: true,
-//       },
-//     });
+  try {
+    const taskHistory = await prisma.taskHistory.findUnique({
+      where: {
+        id: Number(id),
+      },
+    });
 
-//     return res.status(200).json(users);
-//   } catch (error) {
-//     return res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };
+    if (!taskHistory) {
+      return res
+        .status(404)
+        .json({ error: 'There is no task history with this id' });
+    }
 
-// export const updateComment = async (
-//   req: Request,
-//   res: Response
-// ): Promise<any> => {
-//   const { id } = req.params;
-//   const { content } = req.body;
+    return res.status(200).json(taskHistory);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
-//   try {
-//     const comment = await prisma.comment.update({
-//       where: {
-//         id: Number(id),
-//       },
-//       data: {
-//         content,
-//         edited: true,
-//       },
-//     });
+// ----------------------------------------------------------------
 
-//     if (!comment) {
-//       return res
-//         .status(404)
-//         .json({ error: 'There is no comment with this id' });
-//     }
+export const getAllTaskHistories = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { taskId } = req.query;
 
-//     return res.status(201).json({ message: 'Comment updated successfully' });
-//   } catch (error) {
-//     return res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };
+  const filters: any = {};
 
-// export const deleteComment = async (
-//   req: Request,
-//   res: Response
-// ): Promise<any> => {
-//   const { id } = req.params;
+  if (taskId) {
+    filters.taskId = Number(taskId);
+  }
 
-//   try {
-//     const comment = await prisma.comment.delete({
-//       where: {
-//         id: Number(id),
-//       },
-//     });
+  try {
+    const taskHistories = await prisma.taskHistory.findMany({
+      where: filters,
+    });
 
-//     if (!comment) {
-//       return res
-//         .status(404)
-//         .json({ error: 'There is no comment with this id' });
-//     }
-
-//     return res.status(201).json({ message: 'Comment deleted successfully' });
-//   } catch (error) {
-//     return res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };
+    return res.status(200).json(taskHistories);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

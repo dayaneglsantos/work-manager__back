@@ -48,6 +48,9 @@ export const createTask = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getTaskById = async (
   req: Request,
   res: Response
@@ -104,6 +107,9 @@ export const getTaskById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getAllTasks = async (
   req: Request,
   res: Response
@@ -120,10 +126,7 @@ export const getAllTasks = async (
     }
   }
   if (search) {
-    filters.OR = [
-      { title: { contains: search } },
-      // { description: { contains: search } },
-    ];
+    filters.OR = [{ title: { contains: search } }];
   }
 
   // Paginação
@@ -184,12 +187,16 @@ export const getAllTasks = async (
 
     return res.status(200).json(response);
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
-export const updateTask = async (req: Request, res: Response): Promise<any> => {
+// ----------------------------------------------------------------
+
+export const partialUpdateTask = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const { id } = req.params;
   const {
     title,
@@ -238,15 +245,14 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
         return res.status(404).json({ error: 'There is no task with this id' });
       }
 
-      Object.keys(fieldsToUpdate).forEach((field) => {
-        const updateField = Object.keys(field)[0];
-        const oldValue = task[updateField as keyof typeof task];
-        const newValue = field[updateField as keyof typeof field];
+      Object.keys(req.body).forEach((field, index) => {
+        const oldValue = task[field as keyof typeof task];
+        const newValue = req.body[field];
 
         if (oldValue !== newValue) {
           historyRecords.push({
             taskId: task.id,
-            field: updateField,
+            field: field,
             oldValue: oldValue ? String(oldValue) : null,
             newValue: newValue ? String(newValue) : null,
             changedById: currentUserId,
@@ -254,6 +260,15 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
           });
         }
       });
+
+      // Criar registros de histórico para as alterações
+      if (historyRecords.length > 0) {
+        transactions.push(
+          prisma.taskHistory.createMany({
+            data: historyRecords,
+          })
+        );
+      }
 
       if (tagsId && tagsId.length > 0) {
         // Buscar tags já existentes
@@ -297,7 +312,7 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
 
       const updatedTask = await prisma.$transaction(transactions);
 
-      return res.status(201).json({ message: 'Task updated successfully' });
+      return res.status(200).json(updatedTask);
     } catch (error) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -305,6 +320,156 @@ export const updateTask = async (req: Request, res: Response): Promise<any> => {
     return res.status(400).json({ error: 'No fields to update' });
   }
 };
+// ----------------------------------------------------------------
+
+export const fullUpdateTask = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { id } = req.params;
+  const { assigneeId, departmentId, tagsId } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+  const currentUserId = getUserIdFromToken(token!);
+
+  const taskFields = [
+    'title',
+    'description',
+    'status',
+    'deadline',
+    'assigneeId',
+    'departmentId',
+    'priority',
+  ];
+
+  const missingFields = taskFields.filter((field) => !(field in req.body));
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      error: `Missing fields: ${missingFields.join(', ')}`,
+    });
+  }
+
+  const fieldsToUpdate = Object.keys(req.body).reduce((acc: any, key) => {
+    if (taskFields.includes(key)) {
+      if (key === 'assigneeId') {
+        if (assigneeId === null) {
+          acc['assignee'] = { disconnect: true };
+        } else {
+          acc['assignee'] = { connect: { id: assigneeId } };
+        }
+      } else if (key === 'departmentId') {
+        if (departmentId === null) {
+          acc['department'] = { disconnect: true };
+        } else {
+          acc['department'] = { connect: { id: departmentId } };
+        }
+      } else {
+        acc[key] = req.body[key];
+      }
+    }
+    return acc;
+  }, {});
+
+  const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
+
+  const transactions: any[] = [
+    prisma.task.update({
+      where: { id: Number(id) },
+      data: fieldsToUpdate,
+    }),
+  ];
+
+  try {
+    const task = await prisma.task.findFirst({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    if (!task) {
+      return res.status(404).json({ error: 'There is no task with this id' });
+    }
+
+    Object.keys(req.body).forEach((field, index) => {
+      const oldValue = task[field as keyof typeof task];
+      const newValue = req.body[field];
+
+      if (oldValue !== newValue) {
+        historyRecords.push({
+          taskId: task.id,
+          field: field,
+          oldValue: oldValue ? String(oldValue) : null,
+          newValue: newValue ? String(newValue) : null,
+          changedById: currentUserId,
+          changedAt: new Date(),
+        });
+      }
+    });
+
+    // Criar registros de histórico para as alterações
+    if (historyRecords.length > 0) {
+      transactions.push(
+        prisma.taskHistory.createMany({
+          data: historyRecords,
+        })
+      );
+    }
+
+    // Buscar tags já existentes
+    const existingTagIds = await prisma.taskTag.findMany({
+      where: { taskId: Number(id) },
+      select: { tagId: true },
+    });
+    const existingTagsInTask = existingTagIds.map((tag) => tag.tagId);
+
+    const tagsToAdd = tagsId.filter(
+      (tagId: number) => !existingTagsInTask.includes(tagId)
+    );
+
+    for (const tag of tagsToAdd) {
+      const existing = await prisma.tag.findUnique({ where: { id: tag } });
+      if (!existing) {
+        return res.status(404).json({ error: `Tag with id ${tag} not found` });
+      }
+    }
+
+    const tagsToRemove = existingTagsInTask.filter(
+      (tagId: number) => !tagsId.includes(tagId)
+    );
+
+    // Adicionar novas tags
+    if (tagsToAdd.length > 0) {
+      transactions.push(
+        prisma.taskTag.createMany({
+          data: tagsToAdd.map((tagId: number) => ({
+            taskId: Number(id),
+            tagId,
+          })),
+        })
+      );
+    }
+
+    // Remover tags que não estão mais associadas
+    if (tagsToRemove.length > 0) {
+      transactions.push(
+        prisma.taskTag.deleteMany({
+          where: {
+            taskId: Number(id),
+            tagId: { in: tagsToRemove },
+          },
+        })
+      );
+    }
+
+    const updatedTask = await prisma.$transaction(transactions);
+
+    return res.status(200).json(updatedTask);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// ----------------------------------------------------------------
 
 export const deleteTask = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;

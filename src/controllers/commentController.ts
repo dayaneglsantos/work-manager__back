@@ -60,10 +60,12 @@ export const createComment = async (
 
     return res.status(201).json(newComment);
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getCommentById = async (
   req: Request,
   res: Response
@@ -99,6 +101,9 @@ export const getCommentById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getAllComments = async (
   req: Request,
   res: Response
@@ -123,6 +128,8 @@ export const getAllComments = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
 
 export const updateComment = async (
   req: Request,
@@ -153,6 +160,8 @@ export const updateComment = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
 
 export const deleteComment = async (
   req: Request,

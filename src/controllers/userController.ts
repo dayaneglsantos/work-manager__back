@@ -3,6 +3,33 @@ import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
 
+const userFields = [
+  'name',
+  'email',
+  'phoneNumber',
+  'birthDate',
+  'profileImage',
+  'password',
+  'profileId',
+  'supervisorId',
+  'departmentId',
+  'currentSalary',
+  'admissionDate',
+  'currentPosition',
+  'employmentStatus',
+  'notes',
+  'address',
+];
+
+const addressFields = [
+  'zipCode',
+  'state',
+  'city',
+  'street',
+  'number',
+  'complement',
+];
+
 export const createUser = async (
   req: Request,
   res: Response,
@@ -73,6 +100,9 @@ export const createUser = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getUserById = async (
   req: Request,
   res: Response
@@ -101,7 +131,13 @@ export const getUserById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-export const getAllUses = async (req: Request, res: Response): Promise<any> => {
+
+// ----------------------------------------------------------------
+
+export const getAllUsers = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const users = await prisma.user.findMany({
       include: {
@@ -117,46 +153,27 @@ export const getAllUses = async (req: Request, res: Response): Promise<any> => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-export const updateUser = async (req: Request, res: Response): Promise<any> => {
+
+// ----------------------------------------------------------------
+
+export const partialUpdateUser = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   const { id } = req.params;
-  const {
-    name,
-    email,
-    phoneNumber,
-    birthday,
-    profileImage,
-    password,
-    profileId,
-    supervisorId,
-    departmentId,
-    currentSalary,
-    admissionDate,
-    currentPosition,
-    employmentStatus,
-    notes,
-    address,
-  } = req.body;
+  const { address } = req.body;
 
-  const fieldsToUpdate: Prisma.UserUpdateInput = {};
+  function buildUpdateData(body: Record<string, any>, allowedFields: string[]) {
+    return allowedFields.reduce(
+      (acc, field) => {
+        if (body[field] !== undefined) acc[field] = body[field];
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+  }
 
-  if (name) fieldsToUpdate.name = name;
-  if (email) fieldsToUpdate.email = email;
-  if (phoneNumber) fieldsToUpdate.phoneNumber = phoneNumber;
-  if (profileImage) fieldsToUpdate.profileImage = profileImage;
-  if (employmentStatus) fieldsToUpdate.employmentStatus = employmentStatus;
-  if (notes) fieldsToUpdate.notes = notes;
-
-  if (birthday) fieldsToUpdate.birthDate = new Date(birthday);
-  if (admissionDate) fieldsToUpdate.admissionDate = admissionDate;
-  if (password) fieldsToUpdate.password = await hashPassword(password);
-
-  if (profileId) fieldsToUpdate.profile = { connect: { id: profileId } };
-  if (supervisorId)
-    fieldsToUpdate.supervisor = { connect: { id: supervisorId } };
-  if (departmentId)
-    fieldsToUpdate.department = { connect: { id: departmentId } };
-  if (currentSalary) fieldsToUpdate.currentSalary = currentSalary;
-  if (currentPosition) fieldsToUpdate.currentPosition = currentPosition;
+  const fieldsToUpdate = buildUpdateData(req.body, userFields);
 
   // Upsert faz a atualização caso exista ou cria um novo registro se não existir
   if (address) {
@@ -178,7 +195,27 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
         return res.status(404).json({ error: 'There is no user with this id' });
       }
 
-      return res.status(201).json({ message: 'User updated successfully' });
+      const updatedUser = await prisma.user.findUnique({
+        where: {
+          id: Number(id),
+        },
+        include: {
+          address: {
+            omit: {
+              userId: true,
+              id: true,
+            },
+          },
+          profile: true,
+          supervisor: true,
+          department: true,
+        },
+        omit: {
+          password: true,
+        },
+      });
+
+      return res.status(200).json(updatedUser);
     } catch (error) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -186,6 +223,76 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
     return res.status(400).json({ error: 'No fields to update' });
   }
 };
+
+// ----------------------------------------------------------------
+
+export const fullUpdateUser = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  const missingFields = userFields.filter((field) => !(field in req.body));
+  const missingAddressFields = req.body.address
+    ? addressFields.filter((field) => !(field in req.body.address))
+    : [];
+
+  if (missingFields.length > 0 || missingAddressFields.length > 0) {
+    return res.status(400).json({
+      error: `Missing fields: ${[...missingFields, ...missingAddressFields].join(', ')}`,
+    });
+  }
+
+  const fieldsToUpdate = {
+    ...req.body,
+    address: {
+      update: req.body.address,
+    },
+  };
+
+  try {
+    const user = await prisma.user.update({
+      where: {
+        id: Number(id),
+      },
+      data: fieldsToUpdate,
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'There is no user with this id' });
+    }
+
+    const updatedUser = await prisma.user.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        address: {
+          omit: {
+            userId: true,
+            id: true,
+          },
+        },
+        profile: true,
+        supervisor: true,
+        department: true,
+      },
+      omit: {
+        password: true,
+      },
+    });
+
+    return res.status(200).json(updatedUser);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// ----------------------------------------------------------------
 
 export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;

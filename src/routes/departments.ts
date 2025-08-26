@@ -2,9 +2,10 @@ import express from 'express';
 import {
   createDepartment,
   getDepartment,
-  updateDepartment,
+  partialUpdateDepartment,
   deleteDepartment,
   getAllDepartments,
+  fullUpdateDepartment,
 } from '../controllers/departmentController';
 import {
   validateCreateDepartment,
@@ -16,11 +17,17 @@ const router = express.Router();
 
 router.get('/departments/:id', getDepartment);
 router.get('/departments', getAllDepartments);
+router.patch(
+  '/departments/:id',
+  validateUpdateDepartment,
+  validationHandler,
+  partialUpdateDepartment
+);
 router.put(
   '/departments/:id',
   validateUpdateDepartment,
   validationHandler,
-  updateDepartment
+  fullUpdateDepartment
 );
 router.post(
   '/departments',

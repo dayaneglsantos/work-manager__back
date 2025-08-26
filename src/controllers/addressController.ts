@@ -25,6 +25,9 @@ export const getAddressById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getAllAddresses = async (
   req: Request,
   res: Response

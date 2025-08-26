@@ -50,6 +50,9 @@ export const createTaskTag = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getTaskTagById = async (
   req: Request,
   res: Response
@@ -92,6 +95,9 @@ export const getTaskTagById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getAllTasksTags = async (
   req: Request,
   res: Response
@@ -121,6 +127,8 @@ export const getAllTasksTags = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
 
 export const deleteTaskTag = async (
   req: Request,

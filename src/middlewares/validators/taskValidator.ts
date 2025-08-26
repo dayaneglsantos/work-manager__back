@@ -43,4 +43,16 @@ export const validateUpdateTask = [
     .optional()
     .isIn(['low', 'medium', 'high'])
     .withMessage('Priority must be one of: low, medium, high'),
+  body('assigneeId')
+    .optional({ nullable: true })
+    .isInt()
+    .withMessage('Assignee ID must be an integer'),
+  body('departmentId')
+    .optional({ nullable: true })
+    .isInt()
+    .withMessage('Department ID must be an integer'),
+  body('tagsId')
+    .optional({ nullable: true })
+    .isArray()
+    .withMessage('Tags ID must be an array of integers'),
 ];

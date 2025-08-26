@@ -24,6 +24,9 @@ export const createTag = async (req: Request, res: Response): Promise<any> => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getTagById = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
 
@@ -53,11 +56,12 @@ export const getAllTags = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// ----------------------------------------------------------------
+
 export const updateTag = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
   const { name } = req.body;
   const formatedId = parseInt(id, 10);
-  console.log('passei');
 
   try {
     const existingTag = await prisma.tag.findUnique({
@@ -86,6 +90,8 @@ export const updateTag = async (req: Request, res: Response): Promise<any> => {
       .json({ error: 'Internal Server Error', message: error.message });
   }
 };
+
+// ----------------------------------------------------------------
 
 export const deleteTag = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;

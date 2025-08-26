@@ -1,24 +1,5 @@
 import express from 'express';
-import {
-  createCustomPermission,
-  createPermission,
-  createProfilePermission,
-  deleteCustomPermission,
-  deletePermission,
-  deletePermissionAction,
-  deletePermissionType,
-  deleteProfilePermission,
-  editPermission,
-  getAllCustomPermissions,
-  getAllPermissionActions,
-  getAllPermissions,
-  getAllPermissionTypes,
-  getAllProfilePermissions,
-  updateCustomPermission,
-  updatePermissionAction,
-  updatePermissionType,
-  updateProfilePermission,
-} from '../controllers/permissionController';
+
 import {
   validateCreateCustomPermission,
   validateCreatePermission,
@@ -30,6 +11,35 @@ import {
   validateUpdateProfilePermission,
 } from '../middlewares/validators/permissionValidator';
 import { validationHandler } from '../middlewares/validationHandler';
+import {
+  deletePermissionType,
+  getAllPermissionTypes,
+  updatePermissionType,
+} from '../controllers/permissions/typesController';
+import {
+  createPermissionAction,
+  deletePermissionAction,
+  getAllPermissionActions,
+  updatePermissionAction,
+} from '../controllers/permissions/actionsController';
+import {
+  createProfilePermission,
+  deleteProfilePermission,
+  getAllProfilePermissions,
+  updateProfilePermission,
+} from '../controllers/permissions/defaultController';
+import {
+  createPermission,
+  deletePermission,
+  editPermission,
+  getAllPermissions,
+} from '../controllers/permissions/permissionsController';
+import {
+  createCustomPermission,
+  deleteCustomPermission,
+  getAllCustomPermissions,
+  updateCustomPermission,
+} from '../controllers/permissions/customController';
 
 const router = express.Router();
 
@@ -46,7 +56,7 @@ router.post(
   '/permission_actions',
   validateCreatePermissionAction,
   validationHandler,
-  updatePermissionAction
+  createPermissionAction
 );
 router.delete('/permission_actions/:id', deletePermissionAction);
 

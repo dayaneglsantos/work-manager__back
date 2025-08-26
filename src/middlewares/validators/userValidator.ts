@@ -88,15 +88,15 @@ export const validateUpdateUser = [
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
   body('supervisorId')
-    .optional()
+    .optional({ nullable: true })
     .isNumeric()
     .withMessage('Supervisor ID must be a numeric value'),
   body('departmentId')
-    .optional()
+    .optional({ nullable: true })
     .isNumeric()
     .withMessage('Department ID must be a numeric value'),
   body('currentSalary')
-    .optional()
+    .optional({ nullable: true })
     .isNumeric()
     .withMessage('Current salary must be a numeric value'),
   body('admissionDate')

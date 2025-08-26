@@ -27,6 +27,9 @@ export const createProfile = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getProfileById = async (
   req: Request,
   res: Response
@@ -51,6 +54,9 @@ export const getProfileById = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const getAllProfiles = async (
   req: Request,
   res: Response
@@ -63,6 +69,9 @@ export const getAllProfiles = async (
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ----------------------------------------------------------------
+
 export const updateProfile = async (
   req: Request,
   res: Response
@@ -83,6 +92,8 @@ export const updateProfile = async (
     }
   }
 };
+
+// ----------------------------------------------------------------
 
 export const deleteProfile = async (
   req: Request,
