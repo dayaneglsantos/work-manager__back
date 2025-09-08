@@ -146,6 +146,9 @@ export const getAllUsers = async (
         supervisor: true,
         department: true,
       },
+      omit: {
+        password: true,
+      },
     });
 
     return res.status(200).json(users);

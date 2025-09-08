@@ -130,9 +130,9 @@ export const getAllTasks = async (
   }
 
   // Paginação
-  const page = Number(req.query.page) || 1;
-  const pageSize = Number(req.query.pageSize) || 10;
-  const skip = (page - 1) * pageSize; // Calcular o número de registros a pular
+  const page = req.query.page ? Number(req.query.page) : undefined;
+  const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
+  const skip = page && pageSize ? (page - 1) * pageSize : undefined; // Calcular o número de registros a pular
   const take = pageSize; // Número de registros a retornar
 
   try {
@@ -173,17 +173,27 @@ export const getAllTasks = async (
       },
     });
 
-    const response = {
-      data: tasks,
-      meta: {
-        page, // Página atual
-        pageSize, // Tamanho da página
-        totalCount, // Total de registros
-        totalPages: Math.ceil(totalCount / pageSize), // Total de páginas
-        hasNextPage: skip + take < totalCount, // Se há próxima página
-        hasPreviousPage: page > 1, // Se há página anterior
-      },
-    };
+    let response;
+    if (page && pageSize) {
+      response = {
+        data: tasks,
+        meta: {
+          page, // Página atual
+          pageSize, // Tamanho da página
+          totalCount, // Total de registros
+          totalPages: Math.ceil(totalCount / pageSize), // Total de páginas
+          hasNextPage: skip! + take! < totalCount, // Se há próxima página
+          hasPreviousPage: page > 1, // Se há página anterior
+        },
+      };
+    } else {
+      response = {
+        data: tasks,
+        meta: {
+          totalCount,
+        },
+      };
+    }
 
     return res.status(200).json(response);
   } catch (error) {

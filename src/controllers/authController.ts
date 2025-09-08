@@ -24,7 +24,6 @@ export const login = async (req: Request, res: Response): Promise<any> => {
           profileId: true,
           departmentId: true,
           supervisorId: true,
-          currentSalary: true,
         },
       });
 
@@ -75,7 +74,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
       return res
         .status(200)
-        .json({ token, permissions: userPermissions, ...user });
+        .json({ token, ...user, permissions: userPermissions });
     } else {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
