@@ -361,6 +361,7 @@ async function main() {
       assigneeId: supervisor2.id,
       creatorId: admin.id,
       departmentId: tiDepartment.id,
+      blockedBy: task2.id,
     },
   });
   const task4 = await prisma.task.create({
@@ -370,6 +371,7 @@ async function main() {
       assigneeId: funcionario2.id,
       creatorId: supervisor.id,
       departmentId: financeiroDepartment.id,
+      parentTaskId: task1.id,
     },
   });
   const task5 = await prisma.task.create({

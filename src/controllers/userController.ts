@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
+import { buildUpdateData } from '../services/buildUpdateData';
 
 const userFields = [
   'name',
@@ -138,20 +139,72 @@ export const getAllUsers = async (
   req: Request,
   res: Response
 ): Promise<any> => {
+  const { departmentId, search } = req.query;
+  const filters: any = {};
+
+  if (departmentId) {
+    filters.departmentId = Number(departmentId);
+  }
+  if (search) {
+    filters.OR = [{ name: { contains: search } }];
+  }
+
+  // Paginação
+  const page = req.query.page ? Number(req.query.page) : undefined;
+  const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
+  const skip = page && pageSize ? (page - 1) * pageSize : undefined; // Calcular o número de registros a pular
+  const take = pageSize; // Número de registros a retornar
+
   try {
+    const totalCount = await prisma.user.count({
+      where: filters,
+    });
     const users = await prisma.user.findMany({
+      skip,
+      take,
+      where: filters,
       include: {
-        address: true,
+        address: {
+          omit: {
+            userId: true,
+            id: true,
+          },
+        },
         profile: true,
         supervisor: true,
         department: true,
       },
       omit: {
         password: true,
+        departmentId: true,
+        profileId: true,
+        supervisorId: true,
       },
     });
 
-    return res.status(200).json(users);
+    let response;
+    if (page && pageSize) {
+      response = {
+        data: users,
+        meta: {
+          page, // Página atual
+          pageSize, // Tamanho da página
+          totalCount, // Total de registros
+          totalPages: Math.ceil(totalCount / pageSize), // Total de páginas
+          hasNextPage: skip! + take! < totalCount, // Se há próxima página
+          hasPreviousPage: page > 1, // Se há página anterior
+        },
+      };
+    } else {
+      response = {
+        data: users,
+        meta: {
+          totalCount,
+        },
+      };
+    }
+
+    return res.status(200).json(response);
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -165,16 +218,6 @@ export const partialUpdateUser = async (
 ): Promise<any> => {
   const { id } = req.params;
   const { address } = req.body;
-
-  function buildUpdateData(body: Record<string, any>, allowedFields: string[]) {
-    return allowedFields.reduce(
-      (acc, field) => {
-        if (body[field] !== undefined) acc[field] = body[field];
-        return acc;
-      },
-      {} as Record<string, any>
-    );
-  }
 
   const fieldsToUpdate = buildUpdateData(req.body, userFields);
 

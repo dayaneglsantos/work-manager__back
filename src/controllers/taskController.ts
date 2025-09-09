@@ -2,6 +2,17 @@ import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
 import { getUserIdFromToken } from '../services/getUserIdFromToken';
+import { buildUpdateData } from '../services/buildUpdateData';
+
+const taskFields = [
+  'title',
+  'description',
+  'status',
+  'deadline',
+  'assigneeId',
+  'departmentId',
+  'priority',
+];
 
 export const createTask = async (
   req: Request,
@@ -90,6 +101,41 @@ export const getTaskById = async (
             },
           },
         },
+        blocking: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        parentTask: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+        subtasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -161,12 +207,57 @@ export const getAllTasks = async (
           },
         },
         department: true,
-        tags: true,
-        // tags: true,
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        blocking: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        subtasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        parentTask: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
       },
       omit: {
         assigneeId: true,
         creatorId: true,
+        blockedBy: true,
+        departmentId: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -208,126 +299,254 @@ export const partialUpdateTask = async (
   res: Response
 ): Promise<any> => {
   const { id } = req.params;
-  const {
-    title,
-    description,
-    status,
-    deadline,
-    assigneeId,
-    departmentId,
-    priority,
-    tagsId,
-  } = req.body;
+  const { tags } = req.body;
   const token = req.headers.authorization?.split(' ')[1];
   const currentUserId = getUserIdFromToken(token!);
 
-  const fieldsToUpdate: Prisma.TaskUpdateInput = {};
+  const fieldsToUpdate = buildUpdateData(req.body, taskFields);
   const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
 
-  if (title) fieldsToUpdate.title = title;
-  if (description) fieldsToUpdate.description = description;
-  if (status) fieldsToUpdate.status = status;
-  if (deadline) fieldsToUpdate.deadline = new Date(deadline);
-  if (priority) fieldsToUpdate.priority = priority;
-  if (assigneeId) {
-    fieldsToUpdate.assignee = { connect: { id: assigneeId } };
-  }
-  if (departmentId) {
-    fieldsToUpdate.department = { connect: { id: departmentId } };
+  const transactions: any[] = [];
+
+  if (fieldsToUpdate && Object.keys(fieldsToUpdate).length > 0) {
+    transactions.push(
+      prisma.task.update({
+        where: { id: Number(id) },
+        data: fieldsToUpdate,
+      })
+    );
   }
 
-  const transactions: any[] = [
-    prisma.task.update({
-      where: { id: Number(id) },
-      data: fieldsToUpdate,
-    }),
-  ];
-
-  if (Object.keys(fieldsToUpdate).length > 0) {
-    try {
-      const task = await prisma.task.findFirst({
-        where: {
-          id: Number(id),
+  try {
+    const task = await prisma.task.findFirst({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+              },
+            },
+          },
         },
+      },
+    });
+    if (task && task.tags) {
+      task.tags = task.tags.map((item: any) => item.tag.id);
+    }
+
+    if (!task) {
+      return res.status(404).json({ error: 'There is no task with this id' });
+    }
+
+    if (fieldsToUpdate.length === 0 && (!tags || tags.length === 0)) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // ---- TAGS ----
+    if (tags && tags.length > 0) {
+      const existingTagIds = await prisma.taskTag.findMany({
+        where: { taskId: Number(id) },
+        select: { tagId: true },
       });
+      const existingTagsInTask = existingTagIds.map((tag) => tag.tagId);
 
-      if (!task) {
-        return res.status(404).json({ error: 'There is no task with this id' });
-      }
+      const tagsToAdd = tags.filter(
+        (tagId: number) => !existingTagsInTask.includes(tagId)
+      );
+      const tagsToRemove = existingTagsInTask.filter(
+        (tagId: number) => !tags.includes(tagId)
+      );
 
-      Object.keys(req.body).forEach((field, index) => {
-        const oldValue = task[field as keyof typeof task];
-        const newValue = req.body[field];
-
-        if (oldValue !== newValue) {
-          historyRecords.push({
-            taskId: task.id,
-            field: field,
-            oldValue: oldValue ? String(oldValue) : null,
-            newValue: newValue ? String(newValue) : null,
-            changedById: currentUserId,
-            changedAt: new Date(),
-          });
-        }
-      });
-
-      // Criar registros de histórico para as alterações
-      if (historyRecords.length > 0) {
+      // Adicionar novas tags
+      if (tagsToAdd.length > 0) {
         transactions.push(
-          prisma.taskHistory.createMany({
-            data: historyRecords,
+          prisma.taskTag.createMany({
+            data: tagsToAdd.map((tagId: number) => ({
+              taskId: Number(id),
+              tagId,
+            })),
           })
         );
       }
 
-      if (tagsId && tagsId.length > 0) {
-        // Buscar tags já existentes
-        const existingTagIds = await prisma.taskTag.findMany({
-          where: { taskId: Number(id) },
-          select: { tagId: true },
-        });
-        const existingTagsInTask = existingTagIds.map((tag) => tag.tagId);
-
-        const tagsToAdd = tagsId.filter(
-          (tagId: number) => !existingTagsInTask.includes(tagId)
+      // Remover tags que não estão mais associadas
+      if (tagsToRemove.length > 0) {
+        transactions.push(
+          prisma.taskTag.deleteMany({
+            where: {
+              taskId: Number(id),
+              tagId: { in: tagsToRemove },
+            },
+          })
         );
-        const tagsToRemove = existingTagsInTask.filter(
-          (tagId: number) => !tagsId.includes(tagId)
-        );
+      }
+    }
 
-        // Adicionar novas tags
-        if (tagsToAdd.length > 0) {
-          transactions.push(
-            prisma.taskTag.createMany({
-              data: tagsToAdd.map((tagId: number) => ({
-                taskId: Number(id),
-                tagId,
-              })),
-            })
-          );
+    // ---- HISTÓRICO ----
+    const formatValue = (value: any): string | null => {
+      if (value === undefined || value === null) return null;
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number' || typeof value === 'boolean')
+        return String(value);
+      try {
+        return JSON.stringify(value);
+      } catch (e) {
+        return String(value);
+      }
+    };
+
+    for (const field of Object.keys(req.body)) {
+      const oldValues = task[field as keyof typeof task] as any;
+      const newValues = req.body[field] as any;
+
+      // tratamento especial para tags (salva [{id, name}, ...] no histórico)
+      if (field === 'tags') {
+        const oldIds: number[] = Array.isArray(oldValues) ? oldValues : [];
+        const newIds: number[] = Array.isArray(newValues) ? newValues : [];
+
+        // comparar por string para arrays
+        if (JSON.stringify(oldIds) !== JSON.stringify(newIds)) {
+          const allIds = Array.from(new Set([...oldIds, ...newIds]));
+          // busca de todas as tags para pegar os nomes
+          const tags =
+            allIds.length > 0
+              ? await prisma.tag.findMany({
+                  where: { id: { in: allIds } },
+                  select: { id: true, name: true },
+                })
+              : [];
+
+          const tagsWithNames = tags.map((tag) => ({
+            id: tag.id,
+            name: tag.name,
+          }));
+
+          const oldDetailed = oldIds.map((id) => ({
+            id,
+            name: tagsWithNames.find((tag) => tag.id === id)?.name ?? null,
+          }));
+          const newDetailed = newIds.map((id) => ({
+            id,
+            name: tagsWithNames.find((tag) => tag.id === id)?.name ?? null,
+          }));
+
+          historyRecords.push({
+            taskId: task.id,
+            field,
+            oldValue: oldDetailed.length ? JSON.stringify(oldDetailed) : null,
+            newValue: newDetailed.length ? JSON.stringify(newDetailed) : null,
+            changedById: currentUserId,
+            changedAt: new Date(),
+          });
         }
 
-        // Remover tags que não estão mais associadas
-        if (tagsToRemove.length > 0) {
-          transactions.push(
-            prisma.taskTag.deleteMany({
-              where: {
-                taskId: Number(id),
-                tagId: { in: tagsToRemove },
-              },
-            })
-          );
-        }
+        continue;
       }
 
-      const updatedTask = await prisma.$transaction(transactions);
+      // tratamento dos demais campos
+      const oldValueFormated = formatValue(oldValues);
+      const newValueFormated = formatValue(newValues);
 
-      return res.status(200).json(updatedTask);
-    } catch (error) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+      if (oldValueFormated !== newValueFormated) {
+        historyRecords.push({
+          taskId: task.id,
+          field,
+          oldValue: oldValueFormated,
+          newValue: newValueFormated,
+          changedById: currentUserId,
+          changedAt: new Date(),
+        });
+      }
     }
-  } else {
-    return res.status(400).json({ error: 'No fields to update' });
+
+    // Criar registros de histórico para as alterações
+    if (historyRecords.length > 0) {
+      transactions.push(
+        prisma.taskHistory.createMany({
+          data: historyRecords,
+        })
+      );
+    }
+
+    await prisma.$transaction(transactions);
+
+    const updatedTask = await prisma.task.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImage: true,
+          },
+        },
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImage: true,
+          },
+        },
+        department: true,
+        tags: {
+          select: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        blocking: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        parentTask: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+        subtasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignee: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return res.status(200).json(updatedTask);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 // ----------------------------------------------------------------

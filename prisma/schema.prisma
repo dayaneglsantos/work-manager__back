@@ -184,6 +184,14 @@ model Task {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
+  blockedBy    Int?   @map("blocked_by") // Coluna com o id da tarefa que bloqueia esta tarefa
+  blocking     Task?  @relation("TaskBlocking", fields: [blockedBy], references: [id]) // Tarefa que bloqueia esta tarefa
+  blockedTasks Task[] @relation("TaskBlocking") // Tarefas que esta tarefa bloqueia
+
+  parentTaskId Int?   @map("parent_task_id") // Coluna com o id da tarefa pai
+  parentTask   Task?  @relation("TaskSubtasks", fields: [parentTaskId], references: [id]) // Tarefa pai
+  subtasks     Task[] @relation("TaskSubtasks") // Subtarefas desta tarefa
+
   @@map("tasks")
 }
 
