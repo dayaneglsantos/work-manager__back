@@ -188,9 +188,10 @@ model Task {
   blocking     Task?  @relation("TaskBlocking", fields: [blockedBy], references: [id]) // Tarefa que bloqueia esta tarefa
   blockedTasks Task[] @relation("TaskBlocking") // Tarefas que esta tarefa bloqueia
 
-  parentTaskId Int?   @map("parent_task_id") // Coluna com o id da tarefa pai
-  parentTask   Task?  @relation("TaskSubtasks", fields: [parentTaskId], references: [id]) // Tarefa pai
-  subtasks     Task[] @relation("TaskSubtasks") // Subtarefas desta tarefa
+  parentTaskId Int?      @map("parent_task_id") // Coluna com o id da tarefa pai
+  parentTask   Task?     @relation("TaskSubtasks", fields: [parentTaskId], references: [id]) // Tarefa pai
+  subtasks     Task[]    @relation("TaskSubtasks") // Subtarefas desta tarefa
+  comments     Comment[]
 
   @@map("tasks")
 }
@@ -221,21 +222,24 @@ model TaskHistory {
 }
 
 model Comment {
-  id              Int         @id @default(autoincrement())
-  content         String      @db.Text
-  authorId        Int         @map("author_id")
-  author          User        @relation(fields: [authorId], references: [id])
-  referenceId     Int?        @map("reference_id") // ID do item referenciado (tarefa, post...)
-  referenceType   CommentType @map("reference_type") // Tipo de referência (tarefa, post...)
-  parentCommentId Int?        @map("parent_comment_id") // ID do comentário pai, se for uma resposta
-  parentComment   Comment?    @relation("CommentReply", fields: [parentCommentId], references: [id])
-  reply           Comment[]   @relation("CommentReply") // Respostas a comentários
-  edited          Boolean     @default(false)
+  id       Int    @id @default(autoincrement())
+  content  String @db.Text
+  authorId Int    @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id])
+
+  taskId Int?  @map("task_id") // ID da tarefa, se o comentário for sobre uma tarefa
+  task   Task? @relation(fields: [taskId], references: [id])
+
+  // Fazer relações para posts e outros tipos de comentários futuramente
+
+  parentCommentId Int?      @map("parent_comment_id") // ID do comentário pai, se for uma resposta
+  parentComment   Comment?  @relation("CommentReply", fields: [parentCommentId], references: [id])
+  reply           Comment[] @relation("CommentReply") // Respostas a comentários
+  edited          Boolean   @default(false)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([referenceType, referenceId]) // Índice para facilitar buscas por tipo e ID referenciado
   @@index([parentCommentId]) // Índice para facilitar buscas por comentários pai
   @@map("comments")
 }

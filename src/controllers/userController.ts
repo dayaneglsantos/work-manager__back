@@ -67,6 +67,42 @@ export const createUser = async (
         .json({ error: 'There is already a registered user with this email.' });
     }
 
+    if (departmentId) {
+      const existingDepartment = await prisma.department.findUnique({
+        where: {
+          id: departmentId,
+        },
+      });
+
+      if (!existingDepartment) {
+        return res.status(400).json({ error: 'Invalid department ID.' });
+      }
+    }
+
+    if (profileId) {
+      const existingProfile = await prisma.profile.findUnique({
+        where: {
+          id: profileId,
+        },
+      });
+
+      if (!existingProfile) {
+        return res.status(400).json({ error: 'Invalid profile ID.' });
+      }
+    }
+
+    if (supervisorId) {
+      const existingSupervisor = await prisma.user.findUnique({
+        where: {
+          id: supervisorId,
+        },
+      });
+
+      if (!existingSupervisor) {
+        return res.status(400).json({ error: 'Invalid supervisor ID.' });
+      }
+    }
+
     const hashedPassword = await hashPassword(password);
     if (!hashedPassword) {
       throw new Error('Failed to hash the password');
@@ -98,6 +134,7 @@ export const createUser = async (
 
     return res.status(201).json(newUser);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };

@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
 import { CommentType } from '@prisma/client';
 import { getUserIdFromToken } from '../services/getUserIdFromToken';
@@ -9,27 +8,20 @@ export const createComment = async (
   res: Response,
   next: NextFunction
 ): Promise<any> => {
-  const { content, referenceId, referenceType, parentCommentId } = req.body;
+  const { content, taskId, parentCommentId } = req.body;
   const token = req.headers.authorization?.split(' ')[1];
 
   try {
     const authorId = getUserIdFromToken(token!);
 
-    // Onde está sendo feito o comentário
-    const existingReference = (referenceType: CommentType) => {
-      switch (referenceType) {
-        case 'task':
-          return prisma.task.findUnique({ where: { id: referenceId } });
-        default:
-          return null;
-      }
-    };
-    const reference = await existingReference(referenceType);
-
-    if (!reference) {
-      return res.status(404).json({
-        error: `There is no ${referenceType} with that id`,
+    if (taskId) {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
       });
+
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
     }
 
     // Comentário pai
@@ -46,8 +38,7 @@ export const createComment = async (
     const commentData = {
       content,
       author: { connect: { id: authorId } },
-      referencedId: referenceId,
-      referencedType: referenceType,
+      task: taskId ? { connect: { id: taskId } } : undefined,
       ...(parentCommentId && {
         parentComment: { connect: { id: parentCommentId } },
       }),
@@ -60,6 +51,7 @@ export const createComment = async (
 
     return res.status(201).json(newComment);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -117,6 +109,22 @@ export const getAllComments = async (
             name: true,
           },
         },
+        reply: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            edited: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
       },
       omit: {
         authorId: true,
@@ -155,7 +163,21 @@ export const updateComment = async (
         .json({ error: 'There is no comment with this id' });
     }
 
-    return res.status(201).json({ message: 'Comment updated successfully' });
+    const updatedComment = await prisma.comment.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return res.json(updatedComment);
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }

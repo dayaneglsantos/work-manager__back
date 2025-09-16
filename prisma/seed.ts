@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import hashPassword from '../src/services/hashService.js';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +25,7 @@ async function main() {
     data: {
       name: 'Master Admin',
       email: 'admin@teste.com',
-      password: await hashPassword('admin123'),
+      password: 'admin123',
       admissionDate: new Date('2019-02-01'),
       employmentStatus: 'active',
       currentPosition: 'Administrator',
@@ -50,7 +49,7 @@ async function main() {
     data: {
       name: 'Gerente',
       email: 'gerente@teste.com',
-      password: await hashPassword('gerente123'),
+      password: 'gerente123',
       admissionDate: new Date('2023-03-01'),
       employmentStatus: 'active',
       currentPosition: 'Gerente',
@@ -74,7 +73,7 @@ async function main() {
     data: {
       name: 'Gerente 2',
       email: 'gerente2@teste.com',
-      password: await hashPassword('gerente123'),
+      password: 'gerente123',
       admissionDate: new Date('2022-07-01'),
       employmentStatus: 'active',
       currentPosition: 'Gerente',
@@ -98,7 +97,7 @@ async function main() {
     data: {
       name: 'Supervisor',
       email: 'supervisor@teste.com',
-      password: await hashPassword('supervisor123'),
+      password: 'supervisor123',
       admissionDate: new Date('2023-11-01'),
       employmentStatus: 'active',
       currentPosition: 'Supervisor',
@@ -113,7 +112,7 @@ async function main() {
     data: {
       name: 'Supervisor 2',
       email: 'supervisor2@teste.com',
-      password: await hashPassword('supervisor123'),
+      password: 'supervisor123',
       admissionDate: new Date('2023-02-01'),
       employmentStatus: 'active',
       currentPosition: 'Supervisor',
@@ -128,7 +127,7 @@ async function main() {
     data: {
       name: 'Funcionario',
       email: 'funcionario@teste.com',
-      password: await hashPassword('funcionario123'),
+      password: 'funcionario123',
       admissionDate: new Date('2025-05-01'),
       employmentStatus: 'active',
       currentPosition: 'Funcionario',
@@ -143,7 +142,7 @@ async function main() {
     data: {
       name: 'Funcionario 2',
       email: 'funcionario2@teste.com',
-      password: await hashPassword('funcionario123'),
+      password: 'funcionario123',
       admissionDate: new Date('2024-08-01'),
       employmentStatus: 'active',
       currentPosition: 'Funcionario',
@@ -194,7 +193,7 @@ async function main() {
   const userPermissionType = await prisma.permissionType.create({
     data: { name: 'users' },
   });
-  const ddepartmentPermissionType = await prisma.permissionType.create({
+  const departmentPermissionType = await prisma.permissionType.create({
     data: { name: 'departments' },
   });
   const profilePermissionType = await prisma.permissionType.create({
@@ -236,28 +235,28 @@ async function main() {
   const createDepartmentPermission = await prisma.permission.create({
     data: {
       actionId: createPermissionAction.id, // create
-      typeId: ddepartmentPermissionType.id, // departments
+      typeId: departmentPermissionType.id, // departments
       name: 'create-departments',
     },
   });
   const readDepartmentPermission = await prisma.permission.create({
     data: {
       actionId: readPermissionAction.id, // read
-      typeId: ddepartmentPermissionType.id, // departments
+      typeId: departmentPermissionType.id, // departments
       name: 'read-departments',
     },
   });
   const updateDepartmentPermission = await prisma.permission.create({
     data: {
       actionId: updatePermissionAction.id, // update
-      typeId: ddepartmentPermissionType.id, // departments
+      typeId: departmentPermissionType.id, // departments
       name: 'update-departments',
     },
   });
   const deleteDepartmentPermission = await prisma.permission.create({
     data: {
       actionId: deletePermissionAction.id, // delete
-      typeId: ddepartmentPermissionType.id, // departments
+      typeId: departmentPermissionType.id, // departments
       name: 'delete-departments',
     },
   });
@@ -443,8 +442,7 @@ async function main() {
     data: {
       content: 'This is a comment on the user.',
       authorId: admin.id,
-      referenceId: task1.id,
-      referenceType: 'task',
+      taskId: task1.id,
     },
   });
 }

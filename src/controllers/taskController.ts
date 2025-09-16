@@ -252,6 +252,35 @@ export const getAllTasks = async (
             status: true,
           },
         },
+        comments: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            edited: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+              },
+            },
+            parentComment: {
+              select: {
+                id: true,
+                content: true,
+                author: {
+                  select: {
+                    id: true,
+                    name: true,
+                    profileImage: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       omit: {
         assigneeId: true,
@@ -263,6 +292,12 @@ export const getAllTasks = async (
         createdAt: 'desc',
       },
     });
+
+    if (tasks) {
+      tasks.forEach((task: any) => {
+        task.tags = task.tags.map((item: any) => item.tag);
+      });
+    }
 
     let response;
     if (page && pageSize) {

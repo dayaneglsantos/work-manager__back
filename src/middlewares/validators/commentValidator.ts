@@ -7,18 +7,6 @@ export const validateCreateComment = [
     .bail()
     .isString()
     .withMessage('Content must be a string'),
-  body('referenceId')
-    .notEmpty()
-    .withMessage('Reference ID is required')
-    .bail()
-    .isNumeric()
-    .withMessage('Reference ID must be a numeric value'),
-  body('referenceType')
-    .notEmpty()
-    .withMessage('Reference type is required')
-    .bail()
-    .isIn(['task']) // Ajustar opções conforme necessário
-    .withMessage('Reference type must be one of the following: task'),
   body('parentCommentId')
     .optional()
     .isNumeric()
