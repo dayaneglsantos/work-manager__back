@@ -28,6 +28,7 @@ export const createTask = async (
     departmentId,
     priority,
     tagsId,
+    parentTaskId,
   } = req.body;
   const { authorization } = req.headers;
   const token = authorization?.split(' ')[1];
@@ -39,10 +40,12 @@ export const createTask = async (
       description,
       status,
       deadline: deadline ? new Date(deadline) : null,
+
       priority,
       ...(assigneeId && { assignee: { connect: { id: assigneeId } } }),
       ...(currentUserId && { creator: { connect: { id: currentUserId } } }),
       ...(departmentId && { department: { connect: { id: departmentId } } }),
+      ...(parentTaskId && { parentTask: { connect: { id: parentTaskId } } }),
       ...(tagsId && {
         tags: {
           connect: tagsId.map((id: number) => ({ id })),

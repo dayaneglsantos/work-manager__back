@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import hashPassword from '../src/services/hashService.ts';
 
 const prisma = new PrismaClient();
 
@@ -25,7 +26,7 @@ async function main() {
     data: {
       name: 'Master Admin',
       email: 'admin@teste.com',
-      password: 'admin123',
+      password: await hashPassword('admin123'),
       admissionDate: new Date('2019-02-01'),
       employmentStatus: 'active',
       currentPosition: 'Administrator',
@@ -49,7 +50,7 @@ async function main() {
     data: {
       name: 'Gerente',
       email: 'gerente@teste.com',
-      password: 'gerente123',
+      password: await hashPassword('gerente123'),
       admissionDate: new Date('2023-03-01'),
       employmentStatus: 'active',
       currentPosition: 'Gerente',
@@ -73,7 +74,7 @@ async function main() {
     data: {
       name: 'Gerente 2',
       email: 'gerente2@teste.com',
-      password: 'gerente123',
+      password: await hashPassword('gerente123'),
       admissionDate: new Date('2022-07-01'),
       employmentStatus: 'active',
       currentPosition: 'Gerente',
@@ -97,7 +98,7 @@ async function main() {
     data: {
       name: 'Supervisor',
       email: 'supervisor@teste.com',
-      password: 'supervisor123',
+      password: await hashPassword('supervisor123'),
       admissionDate: new Date('2023-11-01'),
       employmentStatus: 'active',
       currentPosition: 'Supervisor',
@@ -112,7 +113,7 @@ async function main() {
     data: {
       name: 'Supervisor 2',
       email: 'supervisor2@teste.com',
-      password: 'supervisor123',
+      password: await hashPassword('supervisor123'),
       admissionDate: new Date('2023-02-01'),
       employmentStatus: 'active',
       currentPosition: 'Supervisor',
@@ -127,7 +128,7 @@ async function main() {
     data: {
       name: 'Funcionario',
       email: 'funcionario@teste.com',
-      password: 'funcionario123',
+      password: await hashPassword('funcionario123'),
       admissionDate: new Date('2025-05-01'),
       employmentStatus: 'active',
       currentPosition: 'Funcionario',
@@ -142,7 +143,7 @@ async function main() {
     data: {
       name: 'Funcionario 2',
       email: 'funcionario2@teste.com',
-      password: 'funcionario123',
+      password: await hashPassword('funcionario123'),
       admissionDate: new Date('2024-08-01'),
       employmentStatus: 'active',
       currentPosition: 'Funcionario',
