@@ -62,34 +62,37 @@ model Department {
 }
 
 model User {
-  id                 Int                @id @default(autoincrement())
+  id                 Int              @id @default(autoincrement())
   name               String
-  email              String             @unique
-  phoneNumber        String?            @map("phone_number")
+  email              String           @unique
+  phoneNumber        String?          @map("phone_number")
   address            Address?
-  birthDate          DateTime?          @map("birth_date")
+  birthDate          DateTime?        @map("birth_date")
   password           String
-  profileImage       String?            @map("profile_image")
-  managedDepartament Department[]       @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
-  profileId          Int                @map("profile_id")
-  profile            Profile            @relation(fields: [profileId], references: [id])
-  supervisorId       Int?               @map("supervisor_id")
-  supervisor         User?              @relation("UserSupervisor", fields: [supervisorId], references: [id])
-  supervisedUsers    User[]             @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
-  departmentId       Int?               @map("department_id")
-  department         Department?        @relation("UserDepartment", fields: [departmentId], references: [id])
-  currentSalary      Float              @map("current_salary")
-  admissionDate      DateTime           @map("admission_date")
-  currentPosition    String             @map("current_position")
-  employmentStatus   EmploymentStatus   @default(active) @map("employment_status")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
+  profileImage       String?          @map("profile_image")
+  managedDepartament Department[]     @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
+  profileId          Int              @map("profile_id")
+  profile            Profile          @relation(fields: [profileId], references: [id])
+  supervisorId       Int?             @map("supervisor_id")
+  supervisor         User?            @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  supervisedUsers    User[]           @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
+  departmentId       Int?             @map("department_id")
+  department         Department?      @relation("UserDepartment", fields: [departmentId], references: [id])
+  currentSalary      Float            @map("current_salary")
+  admissionDate      DateTime         @map("admission_date")
+  currentPosition    String           @map("current_position")
+  employmentStatus   EmploymentStatus @default(active) @map("employment_status")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
   notes              String?
-  customPermissions  CustomPermission[] // Relaciona com a tabela de permissões personalizadas
-  tasksAssigned      Task[]             @relation("TaskAssignee") // Tarefas atribuídas ao usuário
-  tasksCreated       Task[]             @relation("TaskCreator") // Tarefas criadas pelo usuário
-  changedTasks       TaskHistory[] // Histórico de mudanças de tarefas
-  comments           Comment[] // Comentários feitos pelo usuário
+
+  // Relacionamentos
+  customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+  tasksAssigned     Task[]             @relation("TaskAssignee") // Tarefas atribuídas ao usuário
+  tasksCreated      Task[]             @relation("TaskCreator") // Tarefas criadas pelo usuário
+  changedTasks      TaskHistory[] // Histórico de mudanças de tarefas
+  comments          Comment[] // Comentários feitos pelo usuário
+  commentMentions   CommentMention[] // Comentários em que o usuário foi mencionado
 
   @@map("users") // Mapeia o nome da tabela para "users"
 }
@@ -237,9 +240,25 @@ model Comment {
   reply           Comment[] @relation("CommentReply") // Respostas a comentários
   edited          Boolean   @default(false)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  commentMentions CommentMention[]
 
   @@index([parentCommentId]) // Índice para facilitar buscas por comentários pai
   @@map("comments")
+}
+
+model CommentMention {
+  id Int @id @default(autoincrement())
+
+  commentId Int     @map("comment_id")
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade) // Ao excluir o comentário, excluir as menções relacionadas
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([commentId, userId])
+  @@map("comment_mentions")
 }

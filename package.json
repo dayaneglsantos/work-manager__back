@@ -4,7 +4,7 @@
   "main": "server.ts",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts,json --exec tsx src/server.ts",
+    "dev": "nodemon --legacy-watch --watch src --ext ts,json --exec tsx src/server.ts",
     "start": "tsx src/server.ts",
     "lint": "eslint './src/**/*.{js,ts}'",
     "format": "prettier --write './src/**/*.{js,ts,json}'"
@@ -22,7 +22,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.1",
+    "express": "^5.2.1",
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2"
   },

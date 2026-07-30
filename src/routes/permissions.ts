@@ -15,31 +15,31 @@ import {
   deletePermissionType,
   getAllPermissionTypes,
   updatePermissionType,
-} from '../controllers/permissions/typesController';
+} from '../controllers/Permissions/typesController';
 import {
   createPermissionAction,
   deletePermissionAction,
   getAllPermissionActions,
   updatePermissionAction,
-} from '../controllers/permissions/actionsController';
+} from '../controllers/Permissions/actionsController';
 import {
   createProfilePermission,
   deleteProfilePermission,
   getAllProfilePermissions,
   updateProfilePermission,
-} from '../controllers/permissions/defaultController';
+} from '../controllers/Permissions/defaultController';
 import {
   createPermission,
   deletePermission,
   editPermission,
   getAllPermissions,
-} from '../controllers/permissions/permissionsController';
+} from '../controllers/Permissions/permissionsController';
 import {
   createCustomPermission,
   deleteCustomPermission,
   getAllCustomPermissions,
   updateCustomPermission,
-} from '../controllers/permissions/customController';
+} from '../controllers/Permissions/customController';
 
 const router = express.Router();
 
@@ -76,8 +76,6 @@ router.post(
   updatePermissionType
 );
 router.delete('/permission_types/:id', deletePermissionType);
-
-export default router;
 
 // _________________________________ Permission _________________________________
 router.get('/permissions', getAllPermissions);
@@ -126,3 +124,5 @@ router.put(
   updateCustomPermission
 );
 router.delete('/custom_permissions/:id', deleteCustomPermission);
+
+export default router;
