@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
-import { getUserIdFromToken } from '../services/getUserIdFromToken';
 import { buildUpdateData } from '../services/buildUpdateData';
 
 const taskFields = [
@@ -30,9 +29,7 @@ export const createTask = async (
     tagsId,
     parentTaskId,
   } = req.body;
-  const { authorization } = req.headers;
-  const token = authorization?.split(' ')[1];
-  const currentUserId = getUserIdFromToken(token!);
+  const currentUserId = req.user!.userId;
 
   try {
     const taskData = {
@@ -338,8 +335,7 @@ export const partialUpdateTask = async (
 ): Promise<any> => {
   const { id } = req.params;
   const { tags } = req.body;
-  const token = req.headers.authorization?.split(' ')[1];
-  const currentUserId = getUserIdFromToken(token!);
+  const currentUserId = req.user!.userId;
 
   const fieldsToUpdate = buildUpdateData(req.body, taskFields);
   const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
@@ -595,8 +591,7 @@ export const fullUpdateTask = async (
 ): Promise<any> => {
   const { id } = req.params;
   const { assigneeId, departmentId, tagsId } = req.body;
-  const token = req.headers.authorization?.split(' ')[1];
-  const currentUserId = getUserIdFromToken(token!);
+  const currentUserId = req.user!.userId;
 
   const taskFields = [
     'title',

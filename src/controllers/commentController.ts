@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
 import { CommentType } from '@prisma/client';
-import { getUserIdFromToken } from '../services/getUserIdFromToken';
 
 // Atalho - Select para incluir informações do usuário mencionado
 const mentionUserSelect = {
@@ -30,10 +29,9 @@ export const createComment = async (
   next: NextFunction
 ): Promise<any> => {
   const { content, taskId, parentCommentId, mentionedUserIds } = req.body;
-  const token = req.headers.authorization?.split(' ')[1];
 
   try {
-    const authorId = getUserIdFromToken(token!);
+    const authorId = req.user!.userId;
 
     if (taskId) {
       const task = await prisma.task.findUnique({

@@ -1,0 +1,10 @@
+# Padroniza arquivos de texto com LF no repositório e no diretório de trabalho
+* text=auto eol=lf
+
+# Arquivos binários não devem sofrer conversão de final de linha
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

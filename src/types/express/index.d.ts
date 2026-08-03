@@ -1,7 +1,7 @@
-import { Request } from 'express';
+import { JwtPayload } from 'jsonwebtoken';
 
 declare module 'express' {
   export interface Request {
-    user?: any; // Substitua `any` pelo tipo correto do usuário, se tiver um modelo definido.
+    user?: JwtPayload & { userId: number };
   }
 }

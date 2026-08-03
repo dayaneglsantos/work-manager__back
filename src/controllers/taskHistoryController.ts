@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
-import { getUserIdFromToken } from '../services/getUserIdFromToken';
 
 export const createTaskHistory = async (
   req: Request,
@@ -8,10 +7,9 @@ export const createTaskHistory = async (
   next: NextFunction
 ): Promise<any> => {
   const { taskId, field, oldValue, newValue } = req.body;
-  const token = req.headers.authorization?.split(' ')[1];
 
   try {
-    const changedById = getUserIdFromToken(token!);
+    const changedById = req.user!.userId;
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },

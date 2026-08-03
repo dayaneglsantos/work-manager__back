@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
-import { Prisma } from '@prisma/client';
+import { EmploymentStatus } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
+import { normalizeStatusReason } from '../services/employmentStatusService';
 
 const userFields = [
   'name',
@@ -18,6 +19,7 @@ const userFields = [
   'admissionDate',
   'currentPosition',
   'employmentStatus',
+  'statusReason',
   'notes',
   'address',
 ];
@@ -51,8 +53,24 @@ export const createUser = async (
     currentSalary,
     admissionDate,
     employmentStatus,
+    statusReason,
     notes,
   } = req.body;
+
+  const resolvedEmploymentStatus = employmentStatus ?? EmploymentStatus.active;
+  const normalizedStatusReason = normalizeStatusReason(
+    resolvedEmploymentStatus,
+    statusReason
+  );
+
+  if (
+    resolvedEmploymentStatus === EmploymentStatus.inactive &&
+    !normalizedStatusReason
+  ) {
+    return res
+      .status(400)
+      .json({ error: 'Status reason is required for inactive users' });
+  }
 
   try {
     const existingUser = await prisma.user.findUnique({
@@ -114,7 +132,8 @@ export const createUser = async (
       phoneNumber,
       birthDate,
       profileImage,
-      employmentStatus,
+      employmentStatus: resolvedEmploymentStatus,
+      statusReason: normalizedStatusReason,
       notes,
       currentPosition,
       currentSalary,
@@ -267,6 +286,50 @@ export const partialUpdateUser = async (
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
+      const isUpdatingEmploymentStatus =
+        'employmentStatus' in fieldsToUpdate ||
+        'statusReason' in fieldsToUpdate;
+
+      if (isUpdatingEmploymentStatus) {
+        const currentUser = await prisma.user.findUnique({
+          where: {
+            id: Number(id),
+          },
+          select: {
+            employmentStatus: true,
+            statusReason: true,
+          },
+        });
+
+        if (!currentUser) {
+          return res
+            .status(404)
+            .json({ error: 'There is no user with this id' });
+        }
+
+        const resolvedEmploymentStatus =
+          fieldsToUpdate.employmentStatus ?? currentUser.employmentStatus;
+        const resolvedStatusReason =
+          'statusReason' in fieldsToUpdate
+            ? fieldsToUpdate.statusReason
+            : currentUser.statusReason;
+        const normalizedStatusReason = normalizeStatusReason(
+          resolvedEmploymentStatus,
+          resolvedStatusReason
+        );
+
+        if (
+          resolvedEmploymentStatus === EmploymentStatus.inactive &&
+          !normalizedStatusReason
+        ) {
+          return res
+            .status(400)
+            .json({ error: 'Status reason is required for inactive users' });
+        }
+
+        fieldsToUpdate.statusReason = normalizedStatusReason;
+      }
+
       const user = await prisma.user.update({
         where: {
           id: Number(id),
@@ -319,7 +382,9 @@ export const fullUpdateUser = async (
     return res.status(400).json({ error: 'User ID is required' });
   }
 
-  const missingFields = userFields.filter((field) => !(field in req.body));
+  const missingFields = userFields.filter(
+    (field) => field !== 'statusReason' && !(field in req.body)
+  );
   const missingAddressFields = req.body.address
     ? addressFields.filter((field) => !(field in req.body.address))
     : [];
@@ -330,8 +395,23 @@ export const fullUpdateUser = async (
     });
   }
 
+  const normalizedStatusReason = normalizeStatusReason(
+    req.body.employmentStatus,
+    req.body.statusReason
+  );
+
+  if (
+    req.body.employmentStatus === EmploymentStatus.inactive &&
+    !normalizedStatusReason
+  ) {
+    return res
+      .status(400)
+      .json({ error: 'Status reason is required for inactive users' });
+  }
+
   const fieldsToUpdate = {
     ...req.body,
+    statusReason: normalizedStatusReason,
     address: {
       update: req.body.address,
     },

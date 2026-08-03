@@ -1,5 +1,7 @@
 import { body, param } from 'express-validator';
 
+const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
+
 export const validateCreateUser = [
   body('name')
     .notEmpty()
@@ -40,6 +42,23 @@ export const validateCreateUser = [
     .notEmpty()
     .isString()
     .withMessage('Current position is required'),
+  body('employmentStatus')
+    .optional()
+    .isIn(employmentStatuses)
+    .withMessage('Invalid employment status'),
+  body('statusReason')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Status reason must be a string')
+    .bail()
+    .trim()
+    .isLength({ max: 191 })
+    .withMessage('Status reason must have at most 191 characters'),
+  body('statusReason')
+    .if(body('employmentStatus').equals('inactive'))
+    .trim()
+    .notEmpty()
+    .withMessage('Status reason is required for inactive users'),
 ];
 
 export const validateUpdateUser = [
@@ -107,4 +126,16 @@ export const validateUpdateUser = [
     .optional()
     .isObject()
     .withMessage('Address must be an object'),
+  body('employmentStatus')
+    .optional()
+    .isIn(employmentStatuses)
+    .withMessage('Invalid employment status'),
+  body('statusReason')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Status reason must be a string')
+    .bail()
+    .trim()
+    .isLength({ max: 191 })
+    .withMessage('Status reason must have at most 191 characters'),
 ];

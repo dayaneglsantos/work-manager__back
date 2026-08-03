@@ -74,9 +74,9 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
       return res
         .status(200)
-        .json({ token, ...user, permissions: userPermissions });
+        .json({ ...user, permissions: userPermissions });
     } else {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
     }
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });

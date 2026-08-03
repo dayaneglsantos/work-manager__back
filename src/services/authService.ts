@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import prisma from './prisma';
+import { canAccessSystem } from './employmentStatusService';
 dotenv.config();
 
 const authenticateUser = async (
@@ -26,6 +27,10 @@ const authenticateUser = async (
   const validPassword = await bcrypt.compare(password, user.password);
 
   if (!validPassword) {
+    return null;
+  }
+
+  if (!canAccessSystem(user.employmentStatus)) {
     return null;
   }
 
