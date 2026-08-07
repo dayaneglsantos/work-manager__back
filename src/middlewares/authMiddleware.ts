@@ -2,15 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../services/prisma';
 import { canAccessSystem } from '../services/employmentStatusService';
-
-const SECRET_KEY = process.env.JWT_SECRET || 'seu-segredo-aqui';
+import { env } from '../config/env';
+import { authCookieName, authCookieOptions } from '../config/authCookie';
 
 const clearAuthCookie = (res: Response): void => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  });
+  res.clearCookie(authCookieName, authCookieOptions);
 };
 
 export const authenticateToken = async (
@@ -21,28 +17,29 @@ export const authenticateToken = async (
   const token = req.cookies.token;
 
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
   }
 
   let decoded: jwt.JwtPayload & { userId: number };
 
   try {
-    const tokenPayload = jwt.verify(token, SECRET_KEY);
+    const tokenPayload = jwt.verify(token, env.jwtSecret);
 
+    // Se o payload do token não for um objeto ou não contiver a propriedade userId, o usuário não está autorizado
     if (
       typeof tokenPayload === 'string' ||
       !Number.isInteger(tokenPayload.userId)
     ) {
-      return res
-        .status(403)
-        .json({ error: 'Forbidden: Invalid token payload' });
+      clearAuthCookie(res);
+
+      return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
     }
 
     decoded = tokenPayload as jwt.JwtPayload & { userId: number };
   } catch (err) {
-    return res
-      .status(403)
-      .json({ error: 'Forbidden: Invalid or expired token' });
+    clearAuthCookie(res);
+
+    return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
   }
 
   try {
@@ -59,7 +56,7 @@ export const authenticateToken = async (
       clearAuthCookie(res);
 
       return res.status(401).json({
-        error: 'Unauthorized: User does not have access to the system',
+        error: 'Seu acesso ao sistema não está disponível.',
         code: 'USER_ACCESS_REVOKED',
       });
     }

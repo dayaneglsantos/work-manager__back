@@ -4,6 +4,7 @@ import cors from 'cors';
 import { corsConfiguration } from './config/cors';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middlewares/errorHandler';
+import { env } from './config/env';
 
 export const app = express();
 
@@ -27,8 +28,6 @@ process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
 });
 
-const PORT = process.env.APP_PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(env.appPort, () => {
+  console.log(`Server is running on port ${env.appPort}`);
 });

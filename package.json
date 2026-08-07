@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "nodemon --legacy-watch --watch src --ext ts,json --exec tsx src/server.ts",
     "start": "tsx src/server.ts",
-    "lint": "eslint './src/**/*.{js,ts}'",
-    "format": "prettier --write './src/**/*.{js,ts,json}'"
+    "lint": "eslint \"./src/**/*.{js,ts}\"",
+    "format": "prettier --write \"./src/**/*.{js,ts,json}\""
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

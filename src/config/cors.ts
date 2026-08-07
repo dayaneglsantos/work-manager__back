@@ -1,11 +1,11 @@
 // src/config/corsOptions.ts
 import { CorsOptions } from 'cors'; // Importe o tipo se estiver usando TypeScript
+import { env } from './env';
 
 // SUBSTITUA PELAS URLs REAIS DO SEU FRONTEND (PRODUÇÃO E DESENVOLVIMENTO LOCAL)
-const allowedOrigins = [
-  process.env.FRONTEND_PROD_URL,
-  process.env.FRONTEND_DEV_URL,
-];
+const allowedOrigins = [env.frontendProdUrl, env.frontendDevUrl].filter(
+  (origin): origin is string => Boolean(origin)
+);
 
 export const corsConfiguration: CorsOptions = {
   origin: (origin, callback) => {
