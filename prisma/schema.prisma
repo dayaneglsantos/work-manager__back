@@ -88,12 +88,13 @@ model User {
   notes              String?
 
   // Relacionamentos
-  customPermissions CustomPermission[] // Relaciona com a tabela de permissões personalizadas
-  tasksAssigned     Task[]             @relation("TaskAssignee") // Tarefas atribuídas ao usuário
-  tasksCreated      Task[]             @relation("TaskCreator") // Tarefas criadas pelo usuário
-  changedTasks      TaskHistory[] // Histórico de mudanças de tarefas
-  comments          Comment[] // Comentários feitos pelo usuário
-  commentMentions   CommentMention[] // Comentários em que o usuário foi mencionado
+  customPermissions   CustomPermission[] // Relaciona com a tabela de permissões personalizadas
+  tasksAssigned       Task[]               @relation("TaskAssignee") // Tarefas atribuídas ao usuário
+  tasksCreated        Task[]               @relation("TaskCreator") // Tarefas criadas pelo usuário
+  changedTasks        TaskHistory[] // Histórico de mudanças de tarefas
+  comments            Comment[] // Comentários feitos pelo usuário
+  commentMentions     CommentMention[] // Comentários em que o usuário foi mencionado
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users") // Mapeia o nome da tabela para "users"
 }
@@ -262,4 +263,27 @@ model CommentMention {
 
   @@unique([commentId, userId])
   @@map("comment_mentions")
+}
+
+model PasswordResetToken {
+  id     Int  @id @default(autoincrement())
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade) // Ao excluir o usuário, excluir os tokens de redefinição de senha relacionados
+
+  codeHash      String    @map("code_hash") // Hash do código de verificação enviado por e-mail
+  codeExpiresAt DateTime  @map("code_expires_at") // Data de expiração do código
+  codeAttempts  Int       @default(0) @map("code_attempts") // Número de tentativas incorretas de validar o código
+  verifiedAt    DateTime? @map("verified_at") // Data em que o código foi validado com sucesso
+
+  resetTokenHash      String?   @map("reset_token_hash") // Hash do token gerado após a validação do código, usado para redefinir a senha
+  resetTokenExpiresAt DateTime? @map("reset_token_expires_at") // Data de expiração do token de redefinição de senha
+  usedAt              DateTime? @map("used_at") // Data em que o token de redefinição de senha foi usado
+
+  invalidatedAt DateTime? @map("invalidated_at") // Data em que a solicitação de redefinição de senha foi invalidada (ex: usuário solicitou uma nova redefinição antes de usar a anterior)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId]) // Índice para facilitar buscas por usuário
+  @@map("password_reset_tokens")
 }
