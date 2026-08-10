@@ -89,12 +89,12 @@ model User {
 
   // Relacionamentos
   customPermissions   CustomPermission[] // Relaciona com a tabela de permissões personalizadas
-  tasksAssigned       Task[]               @relation("TaskAssignee") // Tarefas atribuídas ao usuário
-  tasksCreated        Task[]               @relation("TaskCreator") // Tarefas criadas pelo usuário
+  tasksAssigned       Task[]             @relation("TaskAssignee") // Tarefas atribuídas ao usuário
+  tasksCreated        Task[]             @relation("TaskCreator") // Tarefas criadas pelo usuário
   changedTasks        TaskHistory[] // Histórico de mudanças de tarefas
   comments            Comment[] // Comentários feitos pelo usuário
   commentMentions     CommentMention[] // Comentários em que o usuário foi mencionado
-  passwordResetTokens PasswordResetToken[]
+  passwordResetTokens PasswordReset[]
 
   @@map("users") // Mapeia o nome da tabela para "users"
 }
@@ -265,7 +265,7 @@ model CommentMention {
   @@map("comment_mentions")
 }
 
-model PasswordResetToken {
+model PasswordReset {
   id     Int  @id @default(autoincrement())
   userId Int  @map("user_id")
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade) // Ao excluir o usuário, excluir os tokens de redefinição de senha relacionados
@@ -285,5 +285,5 @@ model PasswordResetToken {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId]) // Índice para facilitar buscas por usuário
-  @@map("password_reset_tokens")
+  @@map("password_resets")
 }

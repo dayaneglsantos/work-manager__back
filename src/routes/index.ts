@@ -11,13 +11,19 @@ import tasksRoutes from './tasks';
 import tasksTagsRoutes from './tasksTags';
 import commentsRoutes from './comments';
 import taskHistories from './taskHistories';
+import passwordResetRoutes from './passwordReset';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 router.use(loginRoutes);
 router.use(logoutRoutes);
+router.use(passwordResetRoutes);
+
+// Aplica o middleware de autenticação para todas as rotas abaixo
 router.use(authenticateToken);
+
+// Rotas protegidas que requerem autenticação
 router.use(userRoutes);
 router.use(departmentRoutes);
 router.use(profileRoutes);
