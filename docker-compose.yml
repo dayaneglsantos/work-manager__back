@@ -37,6 +37,27 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  # --- SERVIÇO DE E-MAIL LOCAL (MAILPIT) ---
+  # O Mailpit funciona como um servidor SMTP de desenvolvimento: ele recebe os
+  # e-mails enviados pela aplicação, mas não os entrega para endereços reais.
+  # As mensagens capturadas podem ser visualizadas em http://localhost:8025.
+  mailpit:
+    # Imagem oficial do Mailpit publicada no Docker Hub.
+    image: axllent/mailpit:latest
+
+    # Nome amigável para identificar o contêiner no Docker Desktop.
+    container_name: work-manager-mailpit
+
+    # Reinicia o serviço automaticamente, exceto quando ele for parado manualmente.
+    restart: unless-stopped
+
+    # O Mailpit oferece duas interfaces diferentes:
+    # - 8025: interface web para visualizar os e-mails capturados;
+    # - 1025: servidor SMTP pelo qual o backend enviará os e-mails.
+    ports:
+      - '8025:8025'
+      - '1025:1025'
+
   # --- SERVIÇO DA APLICAÇÃO NODE.JS ---
   # Aqui definimos o contêiner para a nossa aplicação back-end.
   app:
@@ -63,6 +84,18 @@ services:
       # onde os serviços se comunicam por seus nomes.
       DATABASE_URL: 'mysql://${DB_USERNAME}:${DB_PASSWORD}@db:3306/${DB_DATABASE}'
 
+      # Configuração do servidor de e-mail usado no ambiente local.
+      # Dentro da rede do Docker Compose, o nome do serviço "mailpit" funciona
+      # como endereço. Por isso não usamos "localhost" no SMTP_HOST.
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+
+      # O Mailpit local não exige TLS nem usuário e senha.
+      SMTP_SECURE: 'false'
+
+      # Remetente que aparecerá nos e-mails capturados pelo Mailpit.
+      EMAIL_FROM: 'Work Manager <no-reply@work-manager.local>'
+
     # Volumes para a aplicação. Essencial para o live-reloading.
     volumes:
       # '.:/app' espelha o diretório atual do seu PC para a pasta /app no contêiner.
@@ -79,6 +112,7 @@ services:
     # Isso evita que sua aplicação tente se conectar a um banco que ainda não subiu.
     depends_on:
       - db
+      - mailpit
 
 # Esta seção no final do arquivo declara formalmente os volumes nomeados
 # que foram usados nos serviços. É uma boa prática para gerenciamento.

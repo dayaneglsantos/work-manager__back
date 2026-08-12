@@ -13,18 +13,16 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     if (token) {
       const user = await prisma.user.findUnique({
         where: { email },
-        include: {
-          profile: true,
-          address: true,
-          department: true,
-        },
-        omit: {
-          password: true,
-          createdAt: true,
-          updatedAt: true,
-          profileId: true,
-          departmentId: true,
-          supervisorId: true,
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          profile: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
