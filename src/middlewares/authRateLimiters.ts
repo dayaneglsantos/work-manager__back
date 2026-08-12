@@ -55,8 +55,7 @@ export const loginAccountRateLimiter = rateLimit({
 const passwordResetRateLimitResponse = (_req: Request, res: Response): void => {
   // A resposta permanece genérica para não confirmar se o e-mail está cadastrado.
   res.status(200).json({
-    message:
-      'Se o e-mail estiver associado a uma conta ativa, enviaremos um código de recuperação.',
+    message: 'Se o e-mail estiver cadastrado, você receberá um código.',
   });
 };
 

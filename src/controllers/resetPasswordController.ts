@@ -14,8 +14,7 @@ import {
 import { sendResetCodeEmail } from '../services/sendResetCodeEmail';
 
 const PASSWORD_RESET_RESPONSE = {
-  message:
-    'Se o e-mail estiver associado a uma conta ativa, enviaremos um código de recuperação.',
+  message: 'Se o e-mail estiver cadastrado, você receberá um código.',
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
