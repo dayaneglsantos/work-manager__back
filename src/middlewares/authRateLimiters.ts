@@ -1,8 +1,14 @@
 import { Request, Response } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { MemoryStore, rateLimit } from 'express-rate-limit';
 
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+
+// Antes usava-se um store compartilhado (Redis) para manter a contagem entre instâncias, mas para simplificar, estamos usando stores em memória de forma separada.
+const loginIpStore = new MemoryStore();
+const loginAccountStore = new MemoryStore();
+const passwordResetIpStore = new MemoryStore();
+const passwordResetAccountStore = new MemoryStore();
 
 // Sem um store configurado, os contadores ficam na memória desta instância.
 // Antes de executar vários backends, devemos usar um store compartilhado (Redis),
@@ -30,6 +36,7 @@ const loginRateLimitResponse = (_req: Request, res: Response): void => {
 
 // Protege o endpoint contra uma única origem tentando várias contas.
 export const loginIpRateLimiter = rateLimit({
+  store: loginIpStore,
   windowMs: FIFTEEN_MINUTES_IN_MS, // Tempo de bloqueio de 15 minutos
   limit: 10, // Limite de 10 tentativas por IP
   standardHeaders: 'draft-8', // Retorna os cabeçalhos de limite de taxa padrão
@@ -40,6 +47,7 @@ export const loginIpRateLimiter = rateLimit({
 
 // Protege uma conta mesmo quando as tentativas vêm de IPs diferentes.
 export const loginAccountRateLimiter = rateLimit({
+  store: loginAccountStore,
   windowMs: FIFTEEN_MINUTES_IN_MS,
   limit: 5,
   keyGenerator: normalizedEmailKey, // Usa o e-mail normalizado como chave para limitar tentativas por conta
@@ -61,6 +69,7 @@ const passwordResetRateLimitResponse = (_req: Request, res: Response): void => {
 
 // Evita que uma única origem dispare solicitações para muitos e-mails.
 export const passwordResetIpRateLimiter = rateLimit({
+  store: passwordResetIpStore,
   windowMs: ONE_HOUR_IN_MS,
   limit: 10,
   standardHeaders: 'draft-8',
@@ -70,6 +79,7 @@ export const passwordResetIpRateLimiter = rateLimit({
 
 // Limita reenvios direcionados à mesma conta, independentemente do IP de origem.
 export const passwordResetAccountRateLimiter = rateLimit({
+  store: passwordResetAccountStore,
   windowMs: ONE_HOUR_IN_MS,
   limit: 3,
   keyGenerator: normalizedEmailKey,
@@ -78,3 +88,17 @@ export const passwordResetAccountRateLimiter = rateLimit({
   legacyHeaders: false,
   handler: passwordResetRateLimitResponse,
 });
+
+// Função para resetar os rate limiters nos testes
+export const resetAuthRateLimiters = async (): Promise<void> => {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Rate limiters can only be reset in the test environment.');
+  }
+
+  await Promise.all([
+    loginIpStore.resetAll(),
+    loginAccountStore.resetAll(),
+    passwordResetIpStore.resetAll(),
+    passwordResetAccountStore.resetAll(),
+  ]);
+};

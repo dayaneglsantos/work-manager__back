@@ -7,7 +7,7 @@ WORKDIR /app
 # Copiando os arquivos de configuração do projeto e instalando as dependências
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm install
+RUN npm ci
 
 # Instalando o Prisma CLI globalmente
 RUN npx prisma generate

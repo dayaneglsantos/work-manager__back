@@ -5,7 +5,7 @@ import globals from 'globals';
 
 export default [
   {
-    files: ['src/**/*.{js,ts}'],
+    files: ['src/**/*.{js,ts}', 'tests/**/*.ts', 'vitest.config.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

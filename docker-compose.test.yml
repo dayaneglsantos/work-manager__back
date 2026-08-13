@@ -1,0 +1,42 @@
+name: work-manager-back-tests
+
+services:
+  db-test:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: test-password
+      MYSQL_DATABASE: work_manager_test
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-ptest-password']
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    tmpfs:
+      - /var/lib/mysql
+
+  test:
+    build: .
+    command: >-
+      sh -c '
+        attempt=1;
+        until npx prisma db push --skip-generate; do
+          if [ "$$attempt" -ge 15 ]; then exit 1; fi;
+          attempt=$$((attempt + 1));
+          sleep 2;
+        done;
+        npm test
+      '
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:test-password@db-test:3306/work_manager_test
+      JWT_SECRET: test-jwt-secret-with-sufficient-length
+      PASSWORD_RESET_SECRET: test-password-reset-secret
+      SMTP_HOST: mail.invalid
+      SMTP_PORT: 1025
+      SMTP_SECURE: 'false'
+      EMAIL_FROM: Work Manager Test <test@work-manager.local>
+      FRONTEND_DEV_URL: http://localhost:2400
+    depends_on:
+      db-test:
+        condition: service_healthy
