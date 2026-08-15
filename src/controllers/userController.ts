@@ -140,9 +140,11 @@ export const createUser = async (
       admissionDate: new Date(admissionDate),
       profile: { connect: { id: profileId } },
       supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
-      address: {
-        create: address,
-      },
+      ...(address && {
+        address: {
+          create: address,
+        },
+      }),
       password: hashedPassword,
       ...(departmentId && { department: { connect: { id: departmentId } } }),
     };
@@ -195,7 +197,7 @@ export const getAllUsers = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  const { departmentId, search } = req.query;
+  const { departmentId, search, employmentStatus } = req.query;
   const filters: any = {};
 
   if (departmentId) {
@@ -203,6 +205,9 @@ export const getAllUsers = async (
   }
   if (search) {
     filters.OR = [{ name: { contains: search } }];
+  }
+  if (employmentStatus) {
+    filters.employmentStatus = employmentStatus as EmploymentStatus;
   }
 
   // Paginação
@@ -277,10 +282,13 @@ export const partialUpdateUser = async (
 
   const fieldsToUpdate = buildUpdateData(req.body, userFields);
 
-  // Upsert faz a atualização caso exista ou cria um novo registro se não existir
+  // Atualiza o endereço existente ou cria um novo quando o usuário ainda não possui um.
   if (address) {
     fieldsToUpdate.address = {
-      update: address,
+      upsert: {
+        create: address,
+        update: address,
+      },
     };
   }
 

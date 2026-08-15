@@ -1,6 +1,56 @@
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
+
+const validateOptionalAddress = [
+  body('address').optional().isObject().withMessage('Address must be an object'),
+  body('address.zipCode')
+    .if(body('address').exists())
+    .notEmpty()
+    .withMessage('Zip code is required')
+    .bail()
+    .isString()
+    .withMessage('Zip code must be a string'),
+  body('address.state')
+    .if(body('address').exists())
+    .notEmpty()
+    .withMessage('State is required')
+    .bail()
+    .isString()
+    .withMessage('State must be a string'),
+  body('address.city')
+    .if(body('address').exists())
+    .notEmpty()
+    .withMessage('City is required')
+    .bail()
+    .isString()
+    .withMessage('City must be a string'),
+  body('address.street')
+    .if(body('address').exists())
+    .notEmpty()
+    .withMessage('Street is required')
+    .bail()
+    .isString()
+    .withMessage('Street must be a string'),
+  body('address.number')
+    .if(body('address').exists())
+    .notEmpty()
+    .withMessage('Address number is required')
+    .bail()
+    .isNumeric()
+    .withMessage('Address number must be numeric'),
+  body('address.complement')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Address complement must be a string'),
+];
+
+export const validateGetUsers = [
+  query('employmentStatus')
+    .optional()
+    .isIn(employmentStatuses)
+    .withMessage('Invalid employment status'),
+];
 
 export const validateCreateUser = [
   body('name')
@@ -59,6 +109,7 @@ export const validateCreateUser = [
     .trim()
     .notEmpty()
     .withMessage('Status reason is required for inactive users'),
+  ...validateOptionalAddress,
 ];
 
 export const validateUpdateUser = [
@@ -122,10 +173,6 @@ export const validateUpdateUser = [
     .optional()
     .isString()
     .withMessage('Admission date must be a valid string'),
-  body('address')
-    .optional()
-    .isObject()
-    .withMessage('Address must be an object'),
   body('employmentStatus')
     .optional()
     .isIn(employmentStatuses)
@@ -138,4 +185,5 @@ export const validateUpdateUser = [
     .trim()
     .isLength({ max: 191 })
     .withMessage('Status reason must have at most 191 characters'),
+  ...validateOptionalAddress,
 ];

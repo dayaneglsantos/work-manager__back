@@ -9,6 +9,7 @@ import {
 } from '../controllers/userController';
 import {
   validateCreateUser,
+  validateGetUsers,
   validateUpdateUser,
 } from '../middlewares/validators/userValidator';
 import { validationHandler } from '../middlewares/validationHandler';
@@ -17,7 +18,7 @@ const router = express.Router();
 
 router.post('/users', validateCreateUser, validationHandler, createUser);
 router.get('/users/:id', getUserById);
-router.get('/users', getAllUsers);
+router.get('/users', validateGetUsers, validationHandler, getAllUsers);
 router.patch(
   '/users/:id',
   validateUpdateUser,
