@@ -4,10 +4,12 @@ import prisma from '../services/prisma';
 import { EmploymentStatus } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
 import { normalizeStatusReason } from '../services/employmentStatusService';
+import { parseDateOnly } from '../utils/dateOnly';
 
 const userFields = [
   'name',
   'email',
+  'cpf',
   'phoneNumber',
   'birthDate',
   'profileImage',
@@ -41,6 +43,7 @@ export const createUser = async (
   const {
     name,
     email,
+    cpf,
     phoneNumber,
     address,
     birthDate,
@@ -73,16 +76,18 @@ export const createUser = async (
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: {
-        email,
+        OR: [{ email }, { cpf }],
       },
     });
 
     if (existingUser) {
+      const duplicatedField = existingUser.email === email ? 'email' : 'CPF';
+
       return res
         .status(400)
-        .json({ error: 'There is already a registered user with this email.' });
+        .json({ error: `There is already a registered user with this ${duplicatedField}.` });
     }
 
     if (departmentId) {
@@ -129,15 +134,16 @@ export const createUser = async (
     const userData = {
       name,
       email,
+      cpf,
       phoneNumber,
-      birthDate,
+      birthDate: birthDate ? parseDateOnly(birthDate) : undefined,
       profileImage,
       employmentStatus: resolvedEmploymentStatus,
       statusReason: normalizedStatusReason,
       notes,
       currentPosition,
       currentSalary,
-      admissionDate: new Date(admissionDate),
+      admissionDate: parseDateOnly(admissionDate),
       profile: { connect: { id: profileId } },
       supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
       ...(address && {
@@ -237,6 +243,7 @@ export const getAllUsers = async (
       },
       omit: {
         password: true,
+        cpf: true,
         departmentId: true,
         profileId: true,
         supervisorId: true,
@@ -281,6 +288,14 @@ export const partialUpdateUser = async (
   const { address } = req.body;
 
   const fieldsToUpdate = buildUpdateData(req.body, userFields);
+
+  if (fieldsToUpdate.birthDate) {
+    fieldsToUpdate.birthDate = parseDateOnly(fieldsToUpdate.birthDate);
+  }
+
+  if (fieldsToUpdate.admissionDate) {
+    fieldsToUpdate.admissionDate = parseDateOnly(fieldsToUpdate.admissionDate);
+  }
 
   // Atualiza o endereço existente ou cria um novo quando o usuário ainda não possui um.
   if (address) {
@@ -419,6 +434,10 @@ export const fullUpdateUser = async (
 
   const fieldsToUpdate = {
     ...req.body,
+    birthDate: req.body.birthDate
+      ? parseDateOnly(req.body.birthDate)
+      : null,
+    admissionDate: parseDateOnly(req.body.admissionDate),
     statusReason: normalizedStatusReason,
     address: {
       update: req.body.address,

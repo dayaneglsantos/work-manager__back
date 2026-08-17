@@ -65,9 +65,10 @@ model User {
   id                 Int              @id @default(autoincrement())
   name               String
   email              String           @unique
+  cpf                String           @unique @db.Char(11)
   phoneNumber        String?          @map("phone_number")
   address            Address?
-  birthDate          DateTime?        @map("birth_date")
+  birthDate          DateTime?        @db.Date @map("birth_date")
   password           String
   profileImage       String?          @map("profile_image")
   managedDepartament Department[]     @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
@@ -79,7 +80,7 @@ model User {
   departmentId       Int?             @map("department_id")
   department         Department?      @relation("UserDepartment", fields: [departmentId], references: [id])
   currentSalary      Float            @map("current_salary")
-  admissionDate      DateTime         @map("admission_date")
+  admissionDate      DateTime         @db.Date @map("admission_date")
   currentPosition    String           @map("current_position")
   employmentStatus   EmploymentStatus @default(active) @map("employment_status")
   statusReason       String?          @map("status_reason")
@@ -176,7 +177,7 @@ model Task {
   title        String
   description  String?       @db.Text
   status       TaskStatus    @default(todo)
-  deadline     DateTime?
+  deadline     DateTime? @db.Date
   assigneeId   Int?          @map("assignee_id")
   creatorId    Int           @map("creator_id")
   departmentId Int?          @map("department_id")

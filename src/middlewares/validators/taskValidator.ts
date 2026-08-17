@@ -1,4 +1,5 @@
 import { body } from 'express-validator';
+import { isValidDateOnly } from '../../utils/dateOnly';
 
 export const validateCreateTask = [
   body('title')
@@ -16,9 +17,9 @@ export const validateCreateTask = [
     .isIn(['todo', 'inProgress', 'done', 'paused'])
     .withMessage('Status must be one of: pending, in-progress, completed'),
   body('deadline')
-    .optional()
-    .isISO8601()
-    .withMessage('Deadline must be a valid date in ISO 8601 format'),
+    .optional({ nullable: true })
+    .custom(isValidDateOnly)
+    .withMessage('Deadline must be a valid date in YYYY-MM-DD format'),
   body('priority')
     .optional()
     .isIn(['low', 'medium', 'high'])
@@ -36,9 +37,9 @@ export const validateUpdateTask = [
     .isIn(['todo', 'inProgress', 'done', 'paused'])
     .withMessage('Status must be one of: todo, inProgress, done, paused'),
   body('deadline')
-    .optional()
-    .isISO8601()
-    .withMessage('Deadline must be a valid date in ISO 8601 format'),
+    .optional({ nullable: true })
+    .custom(isValidDateOnly)
+    .withMessage('Deadline must be a valid date in YYYY-MM-DD format'),
   body('priority')
     .optional()
     .isIn(['low', 'medium', 'high'])

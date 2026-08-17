@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
 import { Prisma } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
+import { parseDateOnly } from '../utils/dateOnly';
 
 const taskFields = [
   'title',
@@ -36,7 +37,7 @@ export const createTask = async (
       title,
       description,
       status,
-      deadline: deadline ? new Date(deadline) : null,
+      deadline: deadline ? parseDateOnly(deadline) : null,
 
       priority,
       ...(assigneeId && { assignee: { connect: { id: assigneeId } } }),
@@ -338,6 +339,10 @@ export const partialUpdateTask = async (
   const currentUserId = req.user!.userId;
 
   const fieldsToUpdate = buildUpdateData(req.body, taskFields);
+
+  if (fieldsToUpdate.deadline) {
+    fieldsToUpdate.deadline = parseDateOnly(fieldsToUpdate.deadline);
+  }
   const historyRecords: Prisma.TaskHistoryCreateManyInput[] = [];
 
   const transactions: any[] = [];
@@ -625,6 +630,8 @@ export const fullUpdateTask = async (
         } else {
           acc['department'] = { connect: { id: departmentId } };
         }
+      } else if (key === 'deadline') {
+        acc[key] = req.body[key] ? parseDateOnly(req.body[key]) : null;
       } else {
         acc[key] = req.body[key];
       }

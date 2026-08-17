@@ -20,7 +20,7 @@ CREATE TABLE `tasks` (
     `title` VARCHAR(191) NOT NULL,
     `description` TEXT NULL,
     `status` ENUM('todo', 'inProgress', 'done', 'paused') NOT NULL DEFAULT 'todo',
-    `deadline` DATETIME(3) NULL,
+    `deadline` DATE NULL,
     `assignee_id` INTEGER NULL,
     `creator_id` INTEGER NOT NULL,
     `department_id` INTEGER NULL,

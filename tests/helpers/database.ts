@@ -3,6 +3,7 @@ import { EmploymentStatus } from '@prisma/client';
 import prisma from '../../src/services/prisma';
 
 export const TEST_EMAIL = 'auth-test@work-manager.local';
+export const TEST_CPF = '10000000876';
 export const TEST_PASSWORD = 'test-password-123';
 
 // Exclui primeiro as tabelas dependentes para respeitar as chaves estrangeiras.
@@ -31,6 +32,7 @@ export const createTestUser = async (
     data: {
       name: 'Authentication Test User',
       email: TEST_EMAIL,
+      cpf: TEST_CPF,
       // Um custo bcrypt menor deixa a suíte rápida sem alterar o código testado.
       password: await bcrypt.hash(TEST_PASSWORD, 4),
       admissionDate: new Date('2024-01-01'),

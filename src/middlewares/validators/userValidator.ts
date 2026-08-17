@@ -1,4 +1,6 @@
 import { body, param, query } from 'express-validator';
+import { isValidDateOnly } from '../../utils/dateOnly';
+import { isValidCpf, normalizeCpf } from '../../utils/cpf';
 
 const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
 
@@ -65,11 +67,21 @@ export const validateCreateUser = [
     .bail()
     .isEmail()
     .withMessage('Invalid email format'),
+  body('cpf')
+    .customSanitizer(normalizeCpf)
+    .notEmpty()
+    .withMessage('CPF is required')
+    .bail()
+    .custom(isValidCpf)
+    .withMessage('CPF must be valid'),
   body('phoneNumber')
     .isString()
     .notEmpty()
     .withMessage('Phone number is required'),
-  body('birthDate').optional().isString(),
+  body('birthDate')
+    .optional()
+    .custom(isValidDateOnly)
+    .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
   body('profileImage').optional().isString(),
   body('password').isString().notEmpty().withMessage('Password is required'),
   body('profileId')
@@ -86,8 +98,10 @@ export const validateCreateUser = [
     .withMessage('Current salary is required'),
   body('admissionDate')
     .notEmpty()
-    .isString()
-    .withMessage('Admission date is required'),
+    .withMessage('Admission date is required')
+    .bail()
+    .custom(isValidDateOnly)
+    .withMessage('Admission date must be a valid date in YYYY-MM-DD format'),
   body('currentPosition')
     .notEmpty()
     .isString()
@@ -128,6 +142,11 @@ export const validateUpdateUser = [
     .bail()
     .isEmail()
     .withMessage('Invalid email format'),
+  body('cpf')
+    .optional()
+    .customSanitizer(normalizeCpf)
+    .custom(isValidCpf)
+    .withMessage('CPF must be valid'),
   body('phoneNumber')
     .optional()
     .notEmpty()
@@ -137,8 +156,8 @@ export const validateUpdateUser = [
     .withMessage('Phone number must be a string'),
   body('birthDate')
     .optional()
-    .isString()
-    .withMessage('Birth date must be a valid string'),
+    .custom(isValidDateOnly)
+    .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
   body('profileImage')
     .optional()
     .isString()
@@ -171,8 +190,8 @@ export const validateUpdateUser = [
     .withMessage('Current salary must be a numeric value'),
   body('admissionDate')
     .optional()
-    .isString()
-    .withMessage('Admission date must be a valid string'),
+    .custom(isValidDateOnly)
+    .withMessage('Admission date must be a valid date in YYYY-MM-DD format'),
   body('employmentStatus')
     .optional()
     .isIn(employmentStatuses)

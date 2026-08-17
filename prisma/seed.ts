@@ -26,6 +26,7 @@ async function main() {
     data: {
       name: 'Master Admin',
       email: 'admin@teste.com',
+      cpf: '10000000108',
       password: await hashPassword('admin123'),
       admissionDate: new Date('2019-02-01'),
       employmentStatus: 'active',
@@ -50,6 +51,7 @@ async function main() {
     data: {
       name: 'Gerente',
       email: 'gerente@teste.com',
+      cpf: '10000000280',
       password: await hashPassword('gerente123'),
       admissionDate: new Date('2023-03-01'),
       employmentStatus: 'active',
@@ -74,6 +76,7 @@ async function main() {
     data: {
       name: 'Gerente 2',
       email: 'gerente2@teste.com',
+      cpf: '10000000361',
       password: await hashPassword('gerente123'),
       admissionDate: new Date('2022-07-01'),
       employmentStatus: 'active',
@@ -98,6 +101,7 @@ async function main() {
     data: {
       name: 'Supervisor',
       email: 'supervisor@teste.com',
+      cpf: '10000000442',
       password: await hashPassword('supervisor123'),
       admissionDate: new Date('2023-11-01'),
       employmentStatus: 'active',
@@ -113,6 +117,7 @@ async function main() {
     data: {
       name: 'Supervisor 2',
       email: 'supervisor2@teste.com',
+      cpf: '10000000523',
       password: await hashPassword('supervisor123'),
       admissionDate: new Date('2023-02-01'),
       employmentStatus: 'active',
@@ -128,6 +133,7 @@ async function main() {
     data: {
       name: 'Funcionario',
       email: 'funcionario@teste.com',
+      cpf: '10000000604',
       password: await hashPassword('funcionario123'),
       admissionDate: new Date('2025-05-01'),
       employmentStatus: 'active',
@@ -143,6 +149,7 @@ async function main() {
     data: {
       name: 'Funcionario 2',
       email: 'funcionario2@teste.com',
+      cpf: '10000000795',
       password: await hashPassword('funcionario123'),
       admissionDate: new Date('2024-08-01'),
       employmentStatus: 'active',

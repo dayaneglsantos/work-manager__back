@@ -15,31 +15,31 @@ import {
   deletePermissionType,
   getAllPermissionTypes,
   updatePermissionType,
-} from '../controllers/Permissions/typesController';
+} from '../controllers/permissions/typesController';
 import {
   createPermissionAction,
   deletePermissionAction,
   getAllPermissionActions,
   updatePermissionAction,
-} from '../controllers/Permissions/actionsController';
+} from '../controllers/permissions/actionsController';
 import {
   createProfilePermission,
   deleteProfilePermission,
   getAllProfilePermissions,
   updateProfilePermission,
-} from '../controllers/Permissions/defaultController';
+} from '../controllers/permissions/defaultController';
 import {
   createPermission,
   deletePermission,
   editPermission,
   getAllPermissions,
-} from '../controllers/Permissions/permissionsController';
+} from '../controllers/permissions/permissionsController';
 import {
   createCustomPermission,
   deleteCustomPermission,
   getAllCustomPermissions,
   updateCustomPermission,
-} from '../controllers/Permissions/customController';
+} from '../controllers/permissions/customController';
 
 const router = express.Router();
 
