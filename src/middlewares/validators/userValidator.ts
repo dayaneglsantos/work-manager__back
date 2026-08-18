@@ -5,7 +5,10 @@ import { isValidCpf, normalizeCpf } from '../../utils/cpf';
 const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
 
 const validateOptionalAddress = [
-  body('address').optional().isObject().withMessage('Address must be an object'),
+  body('address')
+    .optional()
+    .isObject()
+    .withMessage('Address must be an object'),
   body('address.zipCode')
     .if(body('address').exists())
     .notEmpty()
@@ -82,7 +85,6 @@ export const validateCreateUser = [
     .optional()
     .custom(isValidDateOnly)
     .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
-  body('profileImage').optional().isString(),
   body('password').isString().notEmpty().withMessage('Password is required'),
   body('profileId')
     .notEmpty()
@@ -158,10 +160,6 @@ export const validateUpdateUser = [
     .optional()
     .custom(isValidDateOnly)
     .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
-  body('profileImage')
-    .optional()
-    .isString()
-    .withMessage('Profile image must be a valid URL'),
   body('password')
     .optional()
     .notEmpty()

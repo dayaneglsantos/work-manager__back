@@ -8,3 +8,6 @@ process.env.SMTP_PORT = '1025';
 process.env.SMTP_SECURE = 'false';
 process.env.EMAIL_FROM = 'Work Manager Test <test@work-manager.local>';
 process.env.FRONTEND_DEV_URL = 'http://localhost:2400';
+process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud';
+process.env.CLOUDINARY_API_KEY = 'test-api-key';
+process.env.CLOUDINARY_API_SECRET = 'test-api-secret';

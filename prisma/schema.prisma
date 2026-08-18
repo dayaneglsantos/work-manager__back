@@ -70,7 +70,8 @@ model User {
   address            Address?
   birthDate          DateTime?        @db.Date @map("birth_date")
   password           String
-  profileImage       String?          @map("profile_image")
+  profileImage         String?          @map("profile_image")
+  profileImagePublicId String?          @map("profile_image_public_id")
   managedDepartament Department[]     @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
   profileId          Int              @map("profile_id")
   profile            Profile          @relation(fields: [profileId], references: [id])

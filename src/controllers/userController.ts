@@ -5,6 +5,7 @@ import { EmploymentStatus } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
 import { normalizeStatusReason } from '../services/employmentStatusService';
 import { parseDateOnly } from '../utils/dateOnly';
+import { deleteProfileImage } from '../services/cloudinaryService';
 
 const userFields = [
   'name',
@@ -12,7 +13,6 @@ const userFields = [
   'cpf',
   'phoneNumber',
   'birthDate',
-  'profileImage',
   'password',
   'profileId',
   'supervisorId',
@@ -48,7 +48,6 @@ export const createUser = async (
     address,
     birthDate,
     password,
-    profileImage,
     profileId,
     supervisorId,
     departmentId,
@@ -85,9 +84,9 @@ export const createUser = async (
     if (existingUser) {
       const duplicatedField = existingUser.email === email ? 'email' : 'CPF';
 
-      return res
-        .status(400)
-        .json({ error: `There is already a registered user with this ${duplicatedField}.` });
+      return res.status(400).json({
+        error: `There is already a registered user with this ${duplicatedField}.`,
+      });
     }
 
     if (departmentId) {
@@ -137,7 +136,6 @@ export const createUser = async (
       cpf,
       phoneNumber,
       birthDate: birthDate ? parseDateOnly(birthDate) : undefined,
-      profileImage,
       employmentStatus: resolvedEmploymentStatus,
       statusReason: normalizedStatusReason,
       notes,
@@ -434,9 +432,7 @@ export const fullUpdateUser = async (
 
   const fieldsToUpdate = {
     ...req.body,
-    birthDate: req.body.birthDate
-      ? parseDateOnly(req.body.birthDate)
-      : null,
+    birthDate: req.body.birthDate ? parseDateOnly(req.body.birthDate) : null,
     admissionDate: parseDateOnly(req.body.admissionDate),
     statusReason: normalizedStatusReason,
     address: {
@@ -486,22 +482,31 @@ export const fullUpdateUser = async (
 
 export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   const { id } = req.params;
+  const userId = Number(id);
 
   try {
-    await prisma.address.delete({
-      where: {
-        userId: Number(id),
-      },
-    });
-    const user = await prisma.user.delete({
-      where: {
-        id: Number(id),
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        profileImagePublicId: true,
       },
     });
 
     if (!user) {
       return res.status(404).json({ error: 'There is no user with this id' });
     }
+
+    // A imagem é removida antes do usuário para preservar seu publicId caso o Cloudinary esteja indisponível
+    if (user.profileImagePublicId) {
+      await deleteProfileImage(user.profileImagePublicId);
+    }
+
+    await prisma.$transaction([
+      // O endereço é opcional, portanto a ausência dele não deve impedir a exclusão do usuário
+      prisma.address.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
 
     return res.status(201).json({ message: 'User deleted successfully' });
   } catch (error) {

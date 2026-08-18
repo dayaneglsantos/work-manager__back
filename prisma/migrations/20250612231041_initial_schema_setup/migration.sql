@@ -28,6 +28,7 @@ CREATE TABLE `users` (
     `birth_date` DATE NULL,
     `password` VARCHAR(191) NOT NULL,
     `profile_image` VARCHAR(191) NULL,
+    `profile_image_public_id` VARCHAR(191) NULL,
     `profile_id` INTEGER NOT NULL,
     `supervisor_id` INTEGER NULL,
     `department_id` INTEGER NULL,
