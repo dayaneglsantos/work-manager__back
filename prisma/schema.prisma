@@ -21,6 +21,11 @@ enum EmploymentStatus {
   resigned // Usuário pediu demissão
 }
 
+enum PasswordRequestPurpose {
+  passwordReset
+  passwordCreation
+}
+
 enum TaskStatus {
   todo // A fazer
   inProgress // Em progresso
@@ -69,7 +74,7 @@ model User {
   phoneNumber        String?          @map("phone_number")
   address            Address?
   birthDate          DateTime?        @db.Date @map("birth_date")
-  password           String
+  password           String?
   profileImage         String?          @map("profile_image")
   profileImagePublicId String?          @map("profile_image_public_id")
   managedDepartament Department[]     @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
@@ -271,6 +276,8 @@ model PasswordReset {
   id     Int  @id @default(autoincrement())
   userId Int  @map("user_id")
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade) // Ao excluir o usuário, excluir os tokens de redefinição de senha relacionados
+
+  purpose PasswordRequestPurpose @default(passwordReset)
 
   codeHash      String    @map("code_hash") // Hash do código de verificação enviado por e-mail
   codeExpiresAt DateTime  @map("code_expires_at") // Data de expiração do código

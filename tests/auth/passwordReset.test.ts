@@ -108,11 +108,16 @@ describe('Password reset', () => {
     expect(response.status).toBe(200);
     expect(emailMock.sent).toEqual([TEST_EMAIL]);
     expect(await prisma.passwordReset.count()).toBe(1);
+    expect(
+      await prisma.passwordReset.findFirstOrThrow({
+        select: { purpose: true },
+      })
+    ).toEqual({ purpose: 'passwordReset' });
   });
 
-  it('uses the same generic response for inactive and missing accounts', async () => {
+  it('uses the same generic response for inactive, pending and missing accounts', async () => {
     // Respostas idênticas evitam revelar quais endereços possuem uma conta.
-    await createTestUser('inactive');
+    const user = await createTestUser('inactive');
 
     const inactive = await request(app)
       .post('/password-reset/request')
@@ -120,10 +125,19 @@ describe('Password reset', () => {
     const missing = await request(app)
       .post('/password-reset/request')
       .send({ email: 'missing@work-manager.local' });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { employmentStatus: 'active', password: null },
+    });
+    const pending = await request(app)
+      .post('/password-reset/request')
+      .send({ email: user.email });
 
     expect(inactive.status).toBe(200);
     expect(missing.status).toBe(200);
+    expect(pending.status).toBe(200);
     expect(inactive.body).toEqual(missing.body);
+    expect(pending.body).toEqual(missing.body);
     expect(emailMock.sent).toEqual([]);
   });
 
@@ -269,7 +283,10 @@ describe('Password reset', () => {
     expect(response.status).toBe(200);
     expect(mainStored.usedAt).not.toBeNull();
     expect(otherStored.invalidatedAt).not.toBeNull();
-    expect(await bcrypt.compare(NEW_PASSWORD, updatedUser.password)).toBe(true);
+    expect(updatedUser.password).not.toBeNull();
+    expect(await bcrypt.compare(NEW_PASSWORD, updatedUser.password!)).toBe(
+      true
+    );
 
     const reused = await request(app).post('/password-reset/confirm').send({
       resetToken: RESET_TOKEN,

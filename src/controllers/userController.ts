@@ -1,11 +1,16 @@
 import { NextFunction, Request, Response } from 'express';
-import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
-import { EmploymentStatus } from '@prisma/client';
+import { EmploymentStatus, PasswordRequestPurpose } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
 import { normalizeStatusReason } from '../services/employmentStatusService';
 import { parseDateOnly } from '../utils/dateOnly';
 import { deleteProfileImage } from '../services/cloudinaryService';
+import {
+  generateResetCode,
+  hashResetCode,
+} from '../services/passwordResetCryptoService';
+import { env } from '../config/env';
+import { sendPasswordCreationEmail } from '../services/sendPasswordCreationEmail';
 
 const userFields = [
   'name',
@@ -47,7 +52,6 @@ export const createUser = async (
     phoneNumber,
     address,
     birthDate,
-    password,
     profileId,
     supervisorId,
     departmentId,
@@ -125,11 +129,6 @@ export const createUser = async (
       }
     }
 
-    const hashedPassword = await hashPassword(password);
-    if (!hashedPassword) {
-      throw new Error('Failed to hash the password');
-    }
-
     const userData = {
       name,
       email,
@@ -149,15 +148,82 @@ export const createUser = async (
           create: address,
         },
       }),
-      password: hashedPassword,
+      password: null,
       ...(departmentId && { department: { connect: { id: departmentId } } }),
     };
 
-    const newUser = await prisma.user.create({
-      data: userData,
-    });
+    const code = generateResetCode();
+    const now = new Date();
+    const codeExpiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 horas
 
-    return res.status(201).json(newUser);
+    const { newUser, passwordCreationRequest } = await prisma.$transaction(
+      async (transaction) => {
+        const createdUser = await transaction.user.create({
+          data: userData,
+        });
+        //
+        const createdRequest = await transaction.passwordReset.create({
+          data: {
+            userId: createdUser.id,
+            purpose: PasswordRequestPurpose.passwordCreation,
+            codeHash: hashResetCode(code, env.passwordResetSecret),
+            codeExpiresAt,
+            // O convite só é ativado depois que o envio do e-mail termina.
+            invalidatedAt: now,
+          },
+        });
+
+        return {
+          newUser: createdUser, // Usuário recém-criado
+          passwordCreationRequest: createdRequest, // Solicitação de criação de senha recém-criada
+        };
+      }
+    );
+
+    let invitationSent = false;
+
+    try {
+      const frontendUrl =
+        env.nodeEnv === 'production' ? env.frontendProdUrl : env.frontendDevUrl;
+
+      if (!frontendUrl) {
+        throw new Error('Frontend URL is not configured');
+      }
+
+      const passwordCreationUrl = new URL('/criar-senha', frontendUrl);
+      passwordCreationUrl.searchParams.set('email', newUser.email);
+
+      // Envia o e-mail de criação de senha para o usuário recém-criado
+      await sendPasswordCreationEmail({
+        email: newUser.email,
+        name: newUser.name,
+        code,
+        passwordCreationUrl: passwordCreationUrl.toString(),
+      });
+
+      // Se o envio do e-mail for bem-sucedido, ativa o convite de criação de senha
+      const activatedInvitation = await prisma.passwordReset.updateMany({
+        where: {
+          id: passwordCreationRequest.id,
+          purpose: PasswordRequestPurpose.passwordCreation,
+          invalidatedAt: { not: null },
+          usedAt: null,
+        },
+        data: { invalidatedAt: null },
+      });
+      invitationSent = activatedInvitation.count === 1; // Indica se o convite foi ativado com sucesso
+    } catch (error) {
+      // O cadastro permanece salvo. O convite inválido não pode ser usado e
+      // poderá ser substituído por um reenvio administrativo posteriormente.
+      console.error('Falha ao enviar o convite de criação de senha.', error);
+    }
+
+    const { password: _password, ...userWithoutPassword } = newUser;
+
+    return res.status(201).json({
+      ...userWithoutPassword,
+      invitationSent,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });

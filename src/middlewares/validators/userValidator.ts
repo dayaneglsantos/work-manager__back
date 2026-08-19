@@ -85,7 +85,6 @@ export const validateCreateUser = [
     .optional()
     .custom(isValidDateOnly)
     .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
-  body('password').isString().notEmpty().withMessage('Password is required'),
   body('profileId')
     .notEmpty()
     .withMessage('Profile ID is required')

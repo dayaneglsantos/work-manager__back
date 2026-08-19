@@ -68,6 +68,20 @@ describe('Authentication', () => {
     expect(invalidPayload.body.errors).toBeInstanceOf(Array);
   });
 
+  it('rejects an account that has not created its first password', async () => {
+    const user = await createTestUser();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: null },
+    });
+
+    const response = await request(app)
+      .post('/login')
+      .send({ email: TEST_EMAIL, password: TEST_PASSWORD });
+
+    expect(response.status).toBe(401);
+  });
+
   it.each(['inactive', 'terminated', 'resigned'] as const)(
     'blocks users with %s employment status',
     async (status) => {

@@ -12,7 +12,7 @@ const authenticateUser = async (
     where: { email },
   });
 
-  if (!user) {
+  if (!user || !user.password) {
     return null;
   }
 

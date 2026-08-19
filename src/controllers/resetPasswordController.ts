@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { EmploymentStatus } from '@prisma/client';
+import { EmploymentStatus, PasswordRequestPurpose } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { env } from '../config/env';
 import prisma from '../services/prisma';
@@ -45,6 +45,7 @@ export const resetPassword = async (
       where: {
         email: normalizedEmail,
         employmentStatus: EmploymentStatus.active,
+        password: { not: null },
       },
     });
 
@@ -63,6 +64,7 @@ export const resetPassword = async (
     const pendingPasswordReset = await prisma.passwordReset.create({
       data: {
         userId: existingUser.id,
+        purpose: PasswordRequestPurpose.passwordReset,
         codeHash: hashedCode,
         codeExpiresAt,
         invalidatedAt: now,
@@ -83,6 +85,7 @@ export const resetPassword = async (
       await transaction.passwordReset.updateMany({
         where: {
           userId: existingUser.id,
+          purpose: PasswordRequestPurpose.passwordReset,
           id: { not: pendingPasswordReset.id },
           usedAt: null,
           invalidatedAt: null,
@@ -137,6 +140,7 @@ export const verifyPasswordResetCode = async (
       where: {
         email: normalizedEmail,
         employmentStatus: EmploymentStatus.active,
+        password: { not: null },
       },
     });
 
@@ -149,6 +153,7 @@ export const verifyPasswordResetCode = async (
     const passwordResetRequest = await prisma.passwordReset.findFirst({
       where: {
         userId: existingUser.id,
+        purpose: PasswordRequestPurpose.passwordReset,
         verifiedAt: null,
         usedAt: null,
         invalidatedAt: null,
@@ -289,12 +294,14 @@ export const confirmPasswordReset = async (
     const passwordResetRequest = await prisma.passwordReset.findFirst({
       where: {
         resetTokenHash,
+        purpose: PasswordRequestPurpose.passwordReset,
         resetTokenExpiresAt: { gt: now },
         verifiedAt: { not: null },
         usedAt: null,
         invalidatedAt: null,
         user: {
           employmentStatus: EmploymentStatus.active,
+          password: { not: null },
         },
       },
       include: {
@@ -309,6 +316,12 @@ export const confirmPasswordReset = async (
     }
 
     // Impede que a senha atual seja reutilizada como nova senha.
+    if (!passwordResetRequest.user.password) {
+      return res
+        .status(400)
+        .json({ error: 'Token de recuperação inválido ou expirado.' });
+    }
+
     const isCurrentPassword = await bcrypt.compare(
       newPassword,
       passwordResetRequest.user.password
@@ -329,6 +342,7 @@ export const confirmPasswordReset = async (
         const consumedToken = await transaction.passwordReset.updateMany({
           where: {
             id: passwordResetRequest.id,
+            purpose: PasswordRequestPurpose.passwordReset,
             resetTokenHash,
             resetTokenExpiresAt: { gt: new Date() },
             verifiedAt: { not: null },
@@ -336,6 +350,7 @@ export const confirmPasswordReset = async (
             invalidatedAt: null,
             user: {
               employmentStatus: EmploymentStatus.active,
+              password: { not: null },
             },
           },
           data: {
@@ -362,6 +377,7 @@ export const confirmPasswordReset = async (
         await transaction.passwordReset.updateMany({
           where: {
             userId: passwordResetRequest.userId,
+            purpose: PasswordRequestPurpose.passwordReset,
             id: { not: passwordResetRequest.id },
             usedAt: null,
             invalidatedAt: null,
