@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -38,11 +39,32 @@ vi.mock(
 );
 
 import { app } from '../../src/app';
+import { env } from '../../src/config/env';
 import prisma from '../../src/services/prisma';
 import { clearDatabase } from '../helpers/database';
 
 const createProfile = () =>
   prisma.profile.create({ data: { name: `Profile ${Date.now()}` } });
+
+const createAdmin = async () => {
+  const profile = await prisma.profile.create({ data: { name: 'Admin' } });
+
+  return prisma.user.create({
+    data: {
+      name: 'Admin User',
+      email: 'admin@work-manager.local',
+      cpf: '10000000019',
+      password: 'admin-password-hash',
+      admissionDate: new Date('2026-01-01'),
+      currentPosition: 'Administrator',
+      currentSalary: 1,
+      profileId: profile.id,
+    },
+  });
+};
+
+const authCookieFor = (userId: number): string =>
+  `token=${jwt.sign({ userId }, env.jwtSecret, { expiresIn: '1h' })}`;
 
 const buildPayload = (profileId: number) => ({
   name: 'New User',
@@ -72,11 +94,13 @@ describe('User creation invitation', () => {
   });
 
   it('creates a user without a password and activates a 48-hour invitation after sending the email', async () => {
+    const admin = await createAdmin();
     const profile = await createProfile();
     const startedAt = Date.now();
 
     const response = await request(app)
       .post('/users')
+      .set('Cookie', authCookieFor(admin.id))
       .send(buildPayload(profile.id));
 
     const user = await prisma.user.findUniqueOrThrow({
@@ -108,10 +132,12 @@ describe('User creation invitation', () => {
 
   it('keeps the user and the invitation invalid when sending the email fails', async () => {
     emailMock.shouldFail = true;
+    const admin = await createAdmin();
     const profile = await createProfile();
 
     const response = await request(app)
       .post('/users')
+      .set('Cookie', authCookieFor(admin.id))
       .send(buildPayload(profile.id));
 
     const user = await prisma.user.findUniqueOrThrow({

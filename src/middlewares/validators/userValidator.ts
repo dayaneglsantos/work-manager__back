@@ -4,6 +4,12 @@ import { isValidCpf, normalizeCpf } from '../../utils/cpf';
 
 const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
 
+export const validateUserId = [
+  param('id')
+    .isInt({ min: 1 })
+    .withMessage('User ID must be a positive integer'),
+];
+
 const validateOptionalAddress = [
   body('address')
     .optional()
@@ -91,8 +97,8 @@ export const validateCreateUser = [
     .bail()
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
-  body('supervisorId').optional().isNumeric(),
-  body('departmentId').optional().isNumeric(),
+  body('supervisorId').optional({ nullable: true }).isNumeric(),
+  body('departmentId').optional({ nullable: true }).isNumeric(),
   body('currentSalary')
     .notEmpty()
     .isNumeric()

@@ -1,16 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import prisma from '../services/prisma';
-import { EmploymentStatus, PasswordRequestPurpose } from '@prisma/client';
+import { EmploymentStatus } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
 import { normalizeStatusReason } from '../services/employmentStatusService';
 import { parseDateOnly } from '../utils/dateOnly';
 import { deleteProfileImage } from '../services/cloudinaryService';
-import {
-  generateResetCode,
-  hashResetCode,
-} from '../services/passwordResetCryptoService';
-import { env } from '../config/env';
-import { sendPasswordCreationEmail } from '../services/sendPasswordCreationEmail';
+import { sendPasswordCreationInvitation } from '../services/passwordCreationInvitationService';
 
 const userFields = [
   'name',
@@ -152,71 +147,8 @@ export const createUser = async (
       ...(departmentId && { department: { connect: { id: departmentId } } }),
     };
 
-    const code = generateResetCode();
-    const now = new Date();
-    const codeExpiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 horas
-
-    const { newUser, passwordCreationRequest } = await prisma.$transaction(
-      async (transaction) => {
-        const createdUser = await transaction.user.create({
-          data: userData,
-        });
-        //
-        const createdRequest = await transaction.passwordReset.create({
-          data: {
-            userId: createdUser.id,
-            purpose: PasswordRequestPurpose.passwordCreation,
-            codeHash: hashResetCode(code, env.passwordResetSecret),
-            codeExpiresAt,
-            // O convite só é ativado depois que o envio do e-mail termina.
-            invalidatedAt: now,
-          },
-        });
-
-        return {
-          newUser: createdUser, // Usuário recém-criado
-          passwordCreationRequest: createdRequest, // Solicitação de criação de senha recém-criada
-        };
-      }
-    );
-
-    let invitationSent = false;
-
-    try {
-      const frontendUrl =
-        env.nodeEnv === 'production' ? env.frontendProdUrl : env.frontendDevUrl;
-
-      if (!frontendUrl) {
-        throw new Error('Frontend URL is not configured');
-      }
-
-      const passwordCreationUrl = new URL('/criar-senha', frontendUrl);
-      passwordCreationUrl.searchParams.set('email', newUser.email);
-
-      // Envia o e-mail de criação de senha para o usuário recém-criado
-      await sendPasswordCreationEmail({
-        email: newUser.email,
-        name: newUser.name,
-        code,
-        passwordCreationUrl: passwordCreationUrl.toString(),
-      });
-
-      // Se o envio do e-mail for bem-sucedido, ativa o convite de criação de senha
-      const activatedInvitation = await prisma.passwordReset.updateMany({
-        where: {
-          id: passwordCreationRequest.id,
-          purpose: PasswordRequestPurpose.passwordCreation,
-          invalidatedAt: { not: null },
-          usedAt: null,
-        },
-        data: { invalidatedAt: null },
-      });
-      invitationSent = activatedInvitation.count === 1; // Indica se o convite foi ativado com sucesso
-    } catch (error) {
-      // O cadastro permanece salvo. O convite inválido não pode ser usado e
-      // poderá ser substituído por um reenvio administrativo posteriormente.
-      console.error('Falha ao enviar o convite de criação de senha.', error);
-    }
+    const newUser = await prisma.user.create({ data: userData });
+    const invitationSent = await sendPasswordCreationInvitation(newUser);
 
     const { password: _password, ...userWithoutPassword } = newUser;
 
@@ -227,6 +159,52 @@ export const createUser = async (
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// ---------------------------- Reenvio de Convite ------------------------------------
+
+export const resendPasswordCreationInvitation = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const userId = Number(req.params.id);
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (user.password) {
+      return res.status(409).json({
+        error: 'Este usuário já criou sua senha.',
+      });
+    }
+
+    const invitationSent = await sendPasswordCreationInvitation(user);
+
+    if (!invitationSent) {
+      return res.status(502).json({
+        error: 'Não foi possível enviar o convite. Tente novamente mais tarde.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Convite reenviado com sucesso.',
+    });
+  } catch (error) {
+    console.error('Erro ao reenviar o convite de criação de senha.', error);
+    return res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
 
@@ -255,7 +233,12 @@ export const getUserById = async (
       return res.status(404).json({ error: 'There is no user with this id' });
     }
 
-    return res.status(200).json(user);
+    const { password, ...userWithoutPassword } = user;
+
+    return res.status(200).json({
+      ...userWithoutPassword,
+      hasPassword: password !== null,
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -306,18 +289,21 @@ export const getAllUsers = async (
         department: true,
       },
       omit: {
-        password: true,
         cpf: true,
         departmentId: true,
         profileId: true,
         supervisorId: true,
       },
     });
+    const usersWithPasswordStatus = users.map(({ password, ...user }) => ({
+      ...user,
+      hasPassword: password !== null,
+    }));
 
     let response;
     if (page && pageSize) {
       response = {
-        data: users,
+        data: usersWithPasswordStatus,
         meta: {
           page, // Página atual
           pageSize, // Tamanho da página
@@ -329,7 +315,7 @@ export const getAllUsers = async (
       };
     } else {
       response = {
-        data: users,
+        data: usersWithPasswordStatus,
         meta: {
           totalCount,
         },

@@ -6,11 +6,13 @@ import {
   partialUpdateUser,
   deleteUser,
   fullUpdateUser,
+  resendPasswordCreationInvitation,
 } from '../controllers/userController';
 import {
   validateCreateUser,
   validateGetUsers,
   validateUpdateUser,
+  validateUserId,
 } from '../middlewares/validators/userValidator';
 import { validationHandler } from '../middlewares/validationHandler';
 import {
@@ -24,12 +26,20 @@ import {
   validateProfileImageTarget,
   validateProfileImageUploadConfirmation,
 } from '../middlewares/validators/profileImageValidator';
+import { authorizeAdmin } from '../middlewares/adminAuthorization';
 
 const router = express.Router();
 
 router.post('/users', validateCreateUser, validationHandler, createUser);
 router.get('/users/:id', getUserById);
 router.get('/users', validateGetUsers, validationHandler, getAllUsers);
+router.post(
+  '/users/:id/password-invitation/resend',
+  validateUserId,
+  validationHandler,
+  authorizeAdmin,
+  resendPasswordCreationInvitation
+);
 // Endpoint para obter a assinatura de upload de imagem de perfil do usuário
 router.post(
   '/users/:id/profile-image/signature',
