@@ -15,7 +15,6 @@ const userFields = [
   'birthDate',
   'password',
   'profileId',
-  'supervisorId',
   'departmentId',
   'currentSalary',
   'admissionDate',
@@ -48,7 +47,6 @@ export const createUser = async (
     address,
     birthDate,
     profileId,
-    supervisorId,
     departmentId,
     currentPosition,
     currentSalary,
@@ -112,18 +110,6 @@ export const createUser = async (
       }
     }
 
-    if (supervisorId) {
-      const existingSupervisor = await prisma.user.findUnique({
-        where: {
-          id: supervisorId,
-        },
-      });
-
-      if (!existingSupervisor) {
-        return res.status(400).json({ error: 'Invalid supervisor ID.' });
-      }
-    }
-
     const userData = {
       name,
       email,
@@ -137,7 +123,6 @@ export const createUser = async (
       currentSalary,
       admissionDate: parseDateOnly(admissionDate),
       profile: { connect: { id: profileId } },
-      supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
       ...(address && {
         address: {
           create: address,
@@ -224,7 +209,6 @@ export const getUserById = async (
       include: {
         address: true,
         profile: true,
-        supervisor: true,
         department: true,
       },
     });
@@ -285,14 +269,12 @@ export const getAllUsers = async (
           },
         },
         profile: true,
-        supervisor: true,
         department: true,
       },
       omit: {
         cpf: true,
         departmentId: true,
         profileId: true,
-        supervisorId: true,
       },
     });
     const usersWithPasswordStatus = users.map(({ password, ...user }) => ({
@@ -426,7 +408,6 @@ export const partialUpdateUser = async (
             },
           },
           profile: true,
-          supervisor: true,
           department: true,
         },
         omit: {
@@ -516,7 +497,6 @@ export const fullUpdateUser = async (
           },
         },
         profile: true,
-        supervisor: true,
         department: true,
       },
       omit: {

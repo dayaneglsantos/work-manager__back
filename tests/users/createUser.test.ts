@@ -72,7 +72,6 @@ const buildPayload = (profileId: number) => ({
   cpf: '11144477735',
   phoneNumber: '11999999999',
   profileId,
-  supervisorId: null,
   departmentId: null,
   currentSalary: 1000,
   admissionDate: '2026-09-01',
@@ -151,5 +150,83 @@ describe('User creation invitation', () => {
     expect(response.body.invitationSent).toBe(false);
     expect(user.password).toBeNull();
     expect(invitation.invalidatedAt).not.toBeNull();
+  });
+
+  it('normalizes a masked phone number and zip code before persisting them', async () => {
+    const admin = await createAdmin();
+    const profile = await createProfile();
+
+    const response = await request(app)
+      .post('/users')
+      .set('Cookie', authCookieFor(admin.id))
+      .send({
+        ...buildPayload(profile.id),
+        phoneNumber: '(11) 99999-9999',
+        address: {
+          zipCode: '12345-678',
+          state: 'SP',
+          city: 'São Paulo',
+          street: 'Rua Teste',
+          number: 10,
+          complement: null,
+        },
+      });
+
+    expect(response.status).toBe(201);
+
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: 'new-user@work-manager.local' },
+      include: { address: true },
+    });
+
+    expect(user.phoneNumber).toBe('11999999999');
+    expect(user.address?.zipCode).toBe('12345678');
+  });
+
+  it('rejects a phone number with more than 11 digits', async () => {
+    const admin = await createAdmin();
+    const profile = await createProfile();
+
+    const response = await request(app)
+      .post('/users')
+      .set('Cookie', authCookieFor(admin.id))
+      .send({
+        ...buildPayload(profile.id),
+        phoneNumber: '119999999999',
+      });
+
+    expect(response.status).toBe(400);
+    expect(
+      await prisma.user.findUnique({
+        where: { email: 'new-user@work-manager.local' },
+      })
+    ).toBeNull();
+  });
+
+  it('rejects an address with an invalid zip code', async () => {
+    const admin = await createAdmin();
+    const profile = await createProfile();
+
+    const response = await request(app)
+      .post('/users')
+      .set('Cookie', authCookieFor(admin.id))
+      .send({
+        ...buildPayload(profile.id),
+        address: {
+          zipCode: '1234-567',
+          state: 'SP',
+          city: 'São Paulo',
+          street: 'Rua Teste',
+          number: 10,
+          complement: null,
+        },
+      });
+
+    expect(response.status).toBe(400);
+    expect(
+      await prisma.user.findUnique({
+        where: { email: 'new-user@work-manager.local' },
+      })
+    ).toBeNull();
   });
 });

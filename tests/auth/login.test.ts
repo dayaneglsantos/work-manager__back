@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../../src/app';
 import { env } from '../../src/config/env';
+import { resetAuthRateLimiters } from '../../src/middlewares/authRateLimiters';
 import prisma from '../../src/services/prisma';
 import {
   clearDatabase,
@@ -13,7 +14,10 @@ import {
 
 describe('Authentication', () => {
   // Isola os cenários e encerra a conexão do Prisma ao final do arquivo.
-  beforeEach(clearDatabase);
+  beforeEach(async () => {
+    await resetAuthRateLimiters();
+    await clearDatabase();
+  });
 
   afterAll(async () => {
     await clearDatabase();
@@ -130,6 +134,7 @@ describe('Authentication', () => {
       .post('/login')
       .send({ email: TEST_EMAIL, password: TEST_PASSWORD });
 
+    expect(response.status).toBe(200);
     expect(response.body.permissions).toContainEqual({
       name: 'read-users',
       hasPermission: false,

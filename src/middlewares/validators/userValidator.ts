@@ -4,6 +4,9 @@ import { isValidCpf, normalizeCpf } from '../../utils/cpf';
 
 const employmentStatuses = ['active', 'inactive', 'terminated', 'resigned'];
 
+const normalizeDigits = (value: unknown): unknown =>
+  typeof value === 'string' ? value.replace(/\D/g, '') : value;
+
 export const validateUserId = [
   param('id')
     .isInt({ min: 1 })
@@ -17,11 +20,15 @@ const validateOptionalAddress = [
     .withMessage('Address must be an object'),
   body('address.zipCode')
     .if(body('address').exists())
+    .customSanitizer(normalizeDigits)
     .notEmpty()
     .withMessage('Zip code is required')
     .bail()
     .isString()
-    .withMessage('Zip code must be a string'),
+    .withMessage('Zip code must be a string')
+    .bail()
+    .matches(/^\d{8}$/)
+    .withMessage('Zip code must have exactly 8 digits'),
   body('address.state')
     .if(body('address').exists())
     .notEmpty()
@@ -84,9 +91,15 @@ export const validateCreateUser = [
     .custom(isValidCpf)
     .withMessage('CPF must be valid'),
   body('phoneNumber')
+    .customSanitizer(normalizeDigits)
     .isString()
+    .withMessage('Phone number must be a string')
+    .bail()
     .notEmpty()
-    .withMessage('Phone number is required'),
+    .withMessage('Phone number is required')
+    .bail()
+    .matches(/^\d{10,11}$/)
+    .withMessage('Phone number must have 10 or 11 digits'),
   body('birthDate')
     .optional()
     .custom(isValidDateOnly)
@@ -97,7 +110,6 @@ export const validateCreateUser = [
     .bail()
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
-  body('supervisorId').optional({ nullable: true }).isNumeric(),
   body('departmentId').optional({ nullable: true }).isNumeric(),
   body('currentSalary')
     .notEmpty()
@@ -156,11 +168,15 @@ export const validateUpdateUser = [
     .withMessage('CPF must be valid'),
   body('phoneNumber')
     .optional()
+    .customSanitizer(normalizeDigits)
     .notEmpty()
     .withMessage('Phone number cannot be empty')
     .bail()
     .isString()
-    .withMessage('Phone number must be a string'),
+    .withMessage('Phone number must be a string')
+    .bail()
+    .matches(/^\d{10,11}$/)
+    .withMessage('Phone number must have 10 or 11 digits'),
   body('birthDate')
     .optional()
     .custom(isValidDateOnly)
@@ -179,10 +195,6 @@ export const validateUpdateUser = [
     .bail()
     .isNumeric()
     .withMessage('Profile ID must be a numeric value'),
-  body('supervisorId')
-    .optional({ nullable: true })
-    .isNumeric()
-    .withMessage('Supervisor ID must be a numeric value'),
   body('departmentId')
     .optional({ nullable: true })
     .isNumeric()

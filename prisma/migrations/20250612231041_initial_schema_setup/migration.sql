@@ -30,7 +30,6 @@ CREATE TABLE `users` (
     `profile_image` VARCHAR(191) NULL,
     `profile_image_public_id` VARCHAR(191) NULL,
     `profile_id` INTEGER NOT NULL,
-    `supervisor_id` INTEGER NULL,
     `department_id` INTEGER NULL,
     `current_salary` DOUBLE NOT NULL,
     `admission_date` DATE NOT NULL,
@@ -68,9 +67,6 @@ ALTER TABLE `departments` ADD CONSTRAINT `departments_manager_id_fkey` FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE `users` ADD CONSTRAINT `users_profile_id_fkey` FOREIGN KEY (`profile_id`) REFERENCES `profiles`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `users` ADD CONSTRAINT `users_supervisor_id_fkey` FOREIGN KEY (`supervisor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `users` ADD CONSTRAINT `users_department_id_fkey` FOREIGN KEY (`department_id`) REFERENCES `departments`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

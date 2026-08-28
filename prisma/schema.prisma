@@ -80,9 +80,6 @@ model User {
   managedDepartament Department[]     @relation("UserManager") // Faz a relação com o departamento que o usuário gerencia
   profileId          Int              @map("profile_id")
   profile            Profile          @relation(fields: [profileId], references: [id])
-  supervisorId       Int?             @map("supervisor_id")
-  supervisor         User?            @relation("UserSupervisor", fields: [supervisorId], references: [id])
-  supervisedUsers    User[]           @relation("UserSupervisor") // Faz a relação com os usuários supervisionados
   departmentId       Int?             @map("department_id")
   department         Department?      @relation("UserDepartment", fields: [departmentId], references: [id])
   currentSalary      Float            @map("current_salary")

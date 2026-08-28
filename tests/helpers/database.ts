@@ -12,6 +12,7 @@ export const clearDatabase = async (): Promise<void> => {
   await prisma.passwordReset.deleteMany();
   await prisma.customPermission.deleteMany();
   await prisma.profilePermission.deleteMany();
+  await prisma.address.deleteMany();
   await prisma.user.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.permissionAction.deleteMany();
