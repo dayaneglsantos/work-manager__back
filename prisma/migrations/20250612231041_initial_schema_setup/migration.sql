@@ -26,7 +26,7 @@ CREATE TABLE `users` (
     `cpf` CHAR(11) NOT NULL,
     `phone_number` VARCHAR(191) NULL,
     `birth_date` DATE NULL,
-    `password` VARCHAR(191) NOT NULL,
+    `password` VARCHAR(191) NULL,
     `profile_image` VARCHAR(191) NULL,
     `profile_image_public_id` VARCHAR(191) NULL,
     `profile_id` INTEGER NOT NULL,

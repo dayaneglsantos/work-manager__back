@@ -2,6 +2,7 @@
 CREATE TABLE `password_resets` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `user_id` INTEGER NOT NULL,
+    `purpose` ENUM('passwordReset', 'passwordCreation') NOT NULL DEFAULT 'passwordReset',
     `code_hash` VARCHAR(191) NOT NULL,
     `code_expires_at` DATETIME(3) NOT NULL,
     `code_attempts` INTEGER NOT NULL DEFAULT 0,
