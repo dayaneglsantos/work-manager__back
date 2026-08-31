@@ -182,12 +182,11 @@ export const validateUpdateUser = [
     .custom(isValidDateOnly)
     .withMessage('Birth date must be a valid date in YYYY-MM-DD format'),
   body('password')
-    .optional()
-    .notEmpty()
-    .withMessage('Password cannot be empty')
-    .bail()
-    .isString()
-    .withMessage('Password must be a string'),
+    .not()
+    .exists()
+    .withMessage(
+      'Password cannot be changed through the generic user update endpoint'
+    ),
   body('profileId')
     .optional()
     .notEmpty()

@@ -4,7 +4,6 @@ import { EmploymentStatus } from '@prisma/client';
 import { buildUpdateData } from '../services/buildUpdateData';
 import { normalizeStatusReason } from '../services/employmentStatusService';
 import { parseDateOnly } from '../utils/dateOnly';
-import { deleteProfileImage } from '../services/cloudinaryService';
 import { sendPasswordCreationInvitation } from '../services/passwordCreationInvitationService';
 
 const userFields = [
@@ -13,7 +12,6 @@ const userFields = [
   'cpf',
   'phoneNumber',
   'birthDate',
-  'password',
   'profileId',
   'departmentId',
   'currentSalary',
@@ -505,42 +503,6 @@ export const fullUpdateUser = async (
     });
 
     return res.status(200).json(updatedUser);
-  } catch (error) {
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
-
-// ----------------------------------------------------------------
-
-export const deleteUser = async (req: Request, res: Response): Promise<any> => {
-  const { id } = req.params;
-  const userId = Number(id);
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        profileImagePublicId: true,
-      },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'There is no user with this id' });
-    }
-
-    // A imagem é removida antes do usuário para preservar seu publicId caso o Cloudinary esteja indisponível
-    if (user.profileImagePublicId) {
-      await deleteProfileImage(user.profileImagePublicId);
-    }
-
-    await prisma.$transaction([
-      // O endereço é opcional, portanto a ausência dele não deve impedir a exclusão do usuário
-      prisma.address.deleteMany({ where: { userId } }),
-      prisma.user.delete({ where: { id: userId } }),
-    ]);
-
-    return res.status(201).json({ message: 'User deleted successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }

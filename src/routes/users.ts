@@ -4,7 +4,6 @@ import {
   getUserById,
   getAllUsers,
   partialUpdateUser,
-  deleteUser,
   fullUpdateUser,
   resendPasswordCreationInvitation,
 } from '../controllers/userController';
@@ -27,9 +26,21 @@ import {
   validateProfileImageUploadConfirmation,
 } from '../middlewares/validators/profileImageValidator';
 import { authorizeAdmin } from '../middlewares/adminAuthorization';
+import {
+  getSelfProfile,
+  updateSelfProfile,
+} from '../controllers/selfProfileController';
+import { validateUpdateSelfProfile } from '../middlewares/validators/selfProfileValidator';
 
 const router = express.Router();
 
+router.get('/users/me', getSelfProfile);
+router.patch(
+  '/users/me',
+  validateUpdateSelfProfile,
+  validationHandler,
+  updateSelfProfile
+);
 router.post('/users', validateCreateUser, validationHandler, createUser);
 router.get('/users/:id', getUserById);
 router.get('/users', validateGetUsers, validationHandler, getAllUsers);
@@ -73,6 +84,4 @@ router.patch(
   partialUpdateUser
 );
 router.put('/users/:id', validateUpdateUser, validationHandler, fullUpdateUser);
-router.delete('/users/:id', deleteUser);
-
 export default router;

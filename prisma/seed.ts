@@ -233,13 +233,6 @@ async function main() {
     },
   });
 
-  const deleteUserPermission = await prisma.permission.create({
-    data: {
-      actionId: deletePermissionAction.id, // delete
-      typeId: userPermissionType.id, // users
-      name: 'delete-users',
-    },
-  });
   const createDepartmentPermission = await prisma.permission.create({
     data: {
       actionId: createPermissionAction.id, // create
@@ -313,11 +306,6 @@ async function main() {
       {
         profileId: adminProfile.id,
         permissionId: updateUserPermission.id, // update users
-        hasPermission: true,
-      },
-      {
-        profileId: adminProfile.id,
-        permissionId: deleteUserPermission.id, // delete users
         hasPermission: true,
       },
     ],
