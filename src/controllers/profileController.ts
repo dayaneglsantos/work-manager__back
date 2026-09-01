@@ -20,7 +20,25 @@ export const createProfile = async (
       });
     }
 
-    const newProfile = await prisma.profile.create({ data: { name: name } });
+    const newProfile = await prisma.$transaction(async (transaction) => {
+      const profile = await transaction.profile.create({ data: { name } });
+      const permissions = await transaction.permission.findMany({
+        select: { id: true },
+      });
+
+      // Depois de criar o perfil, cria as associações com as permissões existentes com hasPermission definido como false por padrão
+      if (permissions.length > 0) {
+        await transaction.profilePermission.createMany({
+          data: permissions.map((permission) => ({
+            profileId: profile.id,
+            permissionId: permission.id,
+            hasPermission: false,
+          })),
+        });
+      }
+
+      return profile;
+    });
 
     return res.status(201).json(newProfile);
   } catch (error) {

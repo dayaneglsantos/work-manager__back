@@ -20,6 +20,7 @@ export const clearDatabase = async (): Promise<void> => {
   await prisma.profile.deleteMany();
 };
 
+// Cria um usuário de teste com um perfil associado, útil para testes de autenticação e autorização.
 export const createTestUser = async (
   employmentStatus: EmploymentStatus = EmploymentStatus.active
 ) => {
@@ -43,4 +44,46 @@ export const createTestUser = async (
       profileId: profile.id,
     },
   });
+};
+
+// Cria um perfil de teste com permissões associadas, útil para testes de autorização.
+export const grantProfilePermissions = async (
+  profileId: number,
+  permissionNames: string[]
+): Promise<void> => {
+  for (const permissionName of permissionNames) {
+    const [actionName, ...typeParts] = permissionName.split('-');
+    const typeName = typeParts.join('-');
+    const action = await prisma.permissionAction.upsert({
+      where: { name: actionName },
+      update: {},
+      create: { name: actionName },
+    });
+    const type = await prisma.permissionType.upsert({
+      where: { name: typeName },
+      update: {},
+      create: { name: typeName },
+    });
+    const permission = await prisma.permission.upsert({
+      where: { name: permissionName },
+      update: { actionId: action.id, typeId: type.id },
+      create: {
+        name: permissionName,
+        actionId: action.id,
+        typeId: type.id,
+      },
+    });
+
+    await prisma.profilePermission.upsert({
+      where: {
+        profileId_permissionId: { profileId, permissionId: permission.id },
+      },
+      update: { hasPermission: true },
+      create: {
+        profileId,
+        permissionId: permission.id,
+        hasPermission: true,
+      },
+    });
+  }
 };

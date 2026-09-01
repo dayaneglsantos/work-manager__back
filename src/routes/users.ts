@@ -25,7 +25,7 @@ import {
   validateProfileImageTarget,
   validateProfileImageUploadConfirmation,
 } from '../middlewares/validators/profileImageValidator';
-import { authorizeAdmin } from '../middlewares/adminAuthorization';
+import { authorizePermission } from '../middlewares/permissionAuthorization';
 import {
   getSelfProfile,
   updateSelfProfile,
@@ -41,14 +41,26 @@ router.patch(
   validationHandler,
   updateSelfProfile
 );
-router.post('/users', validateCreateUser, validationHandler, createUser);
-router.get('/users/:id', getUserById);
-router.get('/users', validateGetUsers, validationHandler, getAllUsers);
+router.post(
+  '/users',
+  validateCreateUser,
+  validationHandler,
+  authorizePermission('create-users'),
+  createUser
+);
+router.get('/users/:id', authorizePermission('read-users'), getUserById);
+router.get(
+  '/users',
+  validateGetUsers,
+  validationHandler,
+  authorizePermission('read-users'),
+  getAllUsers
+);
 router.post(
   '/users/:id/password-invitation/resend',
   validateUserId,
   validationHandler,
-  authorizeAdmin,
+  authorizePermission('update-users'),
   resendPasswordCreationInvitation
 );
 // Endpoint para obter a assinatura de upload de imagem de perfil do usuário
@@ -81,7 +93,14 @@ router.patch(
   '/users/:id',
   validateUpdateUser,
   validationHandler,
+  authorizePermission('update-users'),
   partialUpdateUser
 );
-router.put('/users/:id', validateUpdateUser, validationHandler, fullUpdateUser);
+router.put(
+  '/users/:id',
+  validateUpdateUser,
+  validationHandler,
+  authorizePermission('update-users'),
+  fullUpdateUser
+);
 export default router;

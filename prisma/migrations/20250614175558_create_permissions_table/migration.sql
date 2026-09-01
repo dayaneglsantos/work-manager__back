@@ -33,6 +33,7 @@ CREATE TABLE `profile_permissions` (
     `permission_id` INTEGER NOT NULL,
     `has_permission` BOOLEAN NOT NULL DEFAULT false,
 
+    UNIQUE INDEX `profile_permissions_profile_id_permission_id_key`(`profile_id`, `permission_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -43,6 +44,7 @@ CREATE TABLE `custom_permissions` (
     `permission_id` INTEGER NOT NULL,
     `has_permission` BOOLEAN NOT NULL DEFAULT false,
 
+    UNIQUE INDEX `custom_permissions_user_id_permission_id_key`(`user_id`, `permission_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

@@ -154,6 +154,7 @@ model ProfilePermission {
   permission    Permission @relation(fields: [permissionId], references: [id])
   hasPermission Boolean    @default(false) @map("has_permission")
 
+  @@unique([profileId, permissionId])
   @@map("profile_permissions") // Mapeia o nome da tabela para "profile_permissions"
 }
 
@@ -165,6 +166,7 @@ model CustomPermission {
   permission    Permission @relation(fields: [permissionId], references: [id])
   hasPermission Boolean    @default(false) @map("has_permission")
 
+  @@unique([userId, permissionId])
   @@map("custom_permissions") // Mapeia o nome da tabela para "custom_permissions"
 }
 

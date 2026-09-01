@@ -1,128 +1,76 @@
 import express from 'express';
 
-import {
-  validateCreateCustomPermission,
-  validateCreatePermission,
-  validateCreatePermissionAction,
-  validateCreateProfilePermission,
-  validateUpdateCustomPermission,
-  validateUpdatePermission,
-  validateUpdatePermissionAction,
-  validateUpdateProfilePermission,
-} from '../middlewares/validators/permissionValidator';
 import { validationHandler } from '../middlewares/validationHandler';
+import { authorizePermission } from '../middlewares/permissionAuthorization';
 import {
-  deletePermissionType,
-  getAllPermissionTypes,
-  updatePermissionType,
-} from '../controllers/permissions/typesController';
+  validateProfilePermissionList,
+  validateProfilePermissionParams,
+  validateUserPermissionList,
+  validateUserPermissionParams,
+} from '../middlewares/validators/permissionAssignmentValidator';
+import { getAllPermissionTypes } from '../controllers/permissions/typesController';
+import { getAllPermissionActions } from '../controllers/permissions/actionsController';
+import { getAllPermissions } from '../controllers/permissions/permissionsController';
 import {
-  createPermissionAction,
-  deletePermissionAction,
-  getAllPermissionActions,
-  updatePermissionAction,
-} from '../controllers/permissions/actionsController';
-import {
-  createProfilePermission,
-  deleteProfilePermission,
-  getAllProfilePermissions,
-  updateProfilePermission,
-} from '../controllers/permissions/defaultController';
-import {
-  createPermission,
-  deletePermission,
-  editPermission,
-  getAllPermissions,
-} from '../controllers/permissions/permissionsController';
-import {
-  createCustomPermission,
-  deleteCustomPermission,
-  getAllCustomPermissions,
-  updateCustomPermission,
-} from '../controllers/permissions/customController';
+  getProfilePermissionList,
+  getUserPermissionList,
+  updateProfilePermissionList,
+  updateUserPermissionList,
+} from '../controllers/permissions/assignmentController';
 
 const router = express.Router();
 
 // _________________________________ Permission Actions Routes _________________________________
 
-router.get('/permission_actions', getAllPermissionActions);
-router.put(
-  '/permission_actions/:id',
-  validateUpdatePermissionAction,
-  validationHandler,
-  updatePermissionAction
-);
-router.post(
+router.get(
   '/permission_actions',
-  validateCreatePermissionAction,
-  validationHandler,
-  createPermissionAction
+  authorizePermission('read-permissions'),
+  getAllPermissionActions
 );
-router.delete('/permission_actions/:id', deletePermissionAction);
 
 // _________________________________ Permission Types Routes _________________________________
 
-router.get('/permission_types', getAllPermissionTypes);
-router.put(
-  '/permission_types/:id',
-  validateUpdatePermissionAction,
-  validationHandler,
-  updatePermissionType
-);
-router.post(
+router.get(
   '/permission_types',
-  validateCreatePermissionAction,
-  validationHandler,
-  updatePermissionType
+  authorizePermission('read-permissions'),
+  getAllPermissionTypes
 );
-router.delete('/permission_types/:id', deletePermissionType);
 
 // _________________________________ Permission _________________________________
-router.get('/permissions', getAllPermissions);
-router.post(
+router.get(
   '/permissions',
-  validateCreatePermission,
-  validationHandler,
-  createPermission
+  authorizePermission('read-permissions'),
+  getAllPermissions
 );
-router.put(
-  '/permissions/:id',
-  validateUpdatePermission,
-  validationHandler,
-  editPermission
-);
-router.delete('/permissions/:id', deletePermission);
 
-// _________________________________ Profile Permissions _________________________________
-router.get('/profile_permissions', getAllProfilePermissions);
-router.post(
-  '/profile_permissions',
-  validateCreateProfilePermission,
+// _________________________________ Permission Checklists _________________________________
+router.get(
+  '/profiles/:profileId/permissions',
+  validateProfilePermissionParams,
   validationHandler,
-  createProfilePermission
+  authorizePermission('read-permissions'),
+  getProfilePermissionList
 );
 router.put(
-  '/profile_permissions/:id',
-  validateUpdateProfilePermission,
+  '/profiles/:profileId/permissions',
+  validateProfilePermissionList,
   validationHandler,
-  updateProfilePermission
+  authorizePermission('update-permissions'),
+  updateProfilePermissionList
 );
-router.delete('/profile_permissions/:id', deleteProfilePermission);
-
-// _________________________________ Custom Permissions _________________________________
-router.get('/custom_permissions', getAllCustomPermissions);
-router.post(
-  '/custom_permissions',
-  validateCreateCustomPermission,
+router.get(
+  '/users/:userId/permissions',
+  validateUserPermissionParams,
   validationHandler,
-  createCustomPermission
+  authorizePermission('read-permissions'),
+  getUserPermissionList
 );
 router.put(
-  '/custom_permissions/:id',
-  validateUpdateCustomPermission,
+  '/users/:userId/permissions',
+  validateUserPermissionList,
   validationHandler,
-  updateCustomPermission
+  authorizePermission('update-permissions'),
+  updateUserPermissionList
 );
-router.delete('/custom_permissions/:id', deleteCustomPermission);
 
 export default router;

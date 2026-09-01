@@ -22,7 +22,7 @@ import { env } from '../../src/config/env';
 import { authenticateToken } from '../../src/middlewares/authMiddleware';
 import userRoutes from '../../src/routes/users';
 import prisma from '../../src/services/prisma';
-import { clearDatabase } from '../helpers/database';
+import { clearDatabase, grantProfilePermissions } from '../helpers/database';
 
 const app = express();
 app.use(cookieParser());
@@ -76,6 +76,10 @@ describe('Password invitation resend', () => {
       '10000000019',
       'admin-password-hash'
     );
+    await grantProfilePermissions(admin.profileId, [
+      'read-users',
+      'update-users',
+    ]);
     const target = await createUserWithProfile(
       'Funcionario',
       'pending@work-manager.local',
@@ -146,6 +150,7 @@ describe('Password invitation resend', () => {
       '10000000442',
       'admin-password-hash'
     );
+    await grantProfilePermissions(admin.profileId, ['update-users']);
     const target = await createUserWithProfile(
       'Funcionario',
       'active@work-manager.local',
@@ -170,6 +175,7 @@ describe('Password invitation resend', () => {
       '10000000604',
       'admin-password-hash'
     );
+    await grantProfilePermissions(admin.profileId, ['update-users']);
     const target = await createUserWithProfile(
       'Funcionario',
       'pending@work-manager.local',

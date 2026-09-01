@@ -41,7 +41,7 @@ vi.mock(
 import { app } from '../../src/app';
 import { env } from '../../src/config/env';
 import prisma from '../../src/services/prisma';
-import { clearDatabase } from '../helpers/database';
+import { clearDatabase, grantProfilePermissions } from '../helpers/database';
 
 const createProfile = () =>
   prisma.profile.create({ data: { name: `Profile ${Date.now()}` } });
@@ -49,7 +49,7 @@ const createProfile = () =>
 const createAdmin = async () => {
   const profile = await prisma.profile.create({ data: { name: 'Admin' } });
 
-  return prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       name: 'Admin User',
       email: 'admin@work-manager.local',
@@ -61,6 +61,10 @@ const createAdmin = async () => {
       profileId: profile.id,
     },
   });
+
+  await grantProfilePermissions(profile.id, ['create-users']);
+
+  return admin;
 };
 
 const authCookieFor = (userId: number): string =>

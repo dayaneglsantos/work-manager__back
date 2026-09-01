@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --legacy-watch --watch src --ext ts,json --exec tsx src/server.ts",
     "start": "tsx src/server.ts",
+    "permissions:sync": "tsx prisma/syncPermissions.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint \"./src/**/*.{js,ts}\" \"./tests/**/*.ts\" vitest.config.ts",

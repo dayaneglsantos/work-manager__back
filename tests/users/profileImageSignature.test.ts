@@ -29,7 +29,7 @@ import {
   verifyProfileImageUploadResponse,
 } from '../../src/services/cloudinaryService';
 import prisma from '../../src/services/prisma';
-import { clearDatabase } from '../helpers/database';
+import { clearDatabase, grantProfilePermissions } from '../helpers/database';
 
 const app = express();
 app.use(cookieParser());
@@ -106,6 +106,7 @@ describe('Profile image upload signature', () => {
       'admin@work-manager.local',
       '10000000108'
     );
+    await grantProfilePermissions(admin.profileId, ['update-users']);
     const target = await createUserWithProfile(
       'Funcionario',
       'target@work-manager.local',
@@ -145,6 +146,7 @@ describe('Profile image upload signature', () => {
       'admin@work-manager.local',
       '10000000523'
     );
+    await grantProfilePermissions(admin.profileId, ['update-users']);
 
     const response = await request(app)
       .post('/users/999999/profile-image/signature')
@@ -359,5 +361,4 @@ describe('Profile image upload signature', () => {
     expect(response.status).toBe(403);
     expect(deleteProfileImage).not.toHaveBeenCalled();
   });
-
 });
