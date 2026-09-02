@@ -3,13 +3,24 @@ import { Request, Response } from 'express';
 
 import hashPassword from '../services/hashService';
 import prisma from '../services/prisma';
+import { parseDateOnly } from '../utils/dateOnly';
 
 const selfProfileSelect = {
   id: true,
   name: true,
   email: true,
+  cpf: true,
   phoneNumber: true,
+  birthDate: true,
   profileImage: true,
+  profile: {
+    select: {
+      id: true,
+      name: true,
+      fullAccess: true,
+    },
+  },
+  systemOwnership: { select: { id: true } },
   address: {
     select: {
       zipCode: true,
@@ -21,6 +32,18 @@ const selfProfileSelect = {
     },
   },
 } as const;
+
+// Função para serializar o perfil do usuário, removendo a propriedade systemOwnership e adicionando isSystemOwner
+const serializeSelfProfile = <T extends { systemOwnership: unknown }>(
+  user: T
+) => {
+  const { systemOwnership, ...personalProfile } = user;
+
+  return {
+    ...personalProfile,
+    isSystemOwner: Boolean(systemOwnership),
+  };
+};
 
 export const getSelfProfile = async (
   req: Request,
@@ -36,7 +59,7 @@ export const getSelfProfile = async (
       return res.status(404).json({ error: 'User not found' });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json(serializeSelfProfile(user));
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -47,7 +70,14 @@ export const updateSelfProfile = async (
   res: Response
 ): Promise<any> => {
   const userId = req.user!.userId;
-  const { name, phoneNumber, address, currentPassword, newPassword } = req.body;
+  const {
+    name,
+    phoneNumber,
+    birthDate,
+    address,
+    currentPassword,
+    newPassword,
+  } = req.body;
 
   try {
     const currentUser = await prisma.user.findUnique({
@@ -86,6 +116,9 @@ export const updateSelfProfile = async (
 
       if (name !== undefined) data.name = name;
       if (phoneNumber !== undefined) data.phoneNumber = phoneNumber;
+      if (birthDate !== undefined) {
+        data.birthDate = birthDate ? parseDateOnly(birthDate) : null;
+      }
       if (password !== undefined) data.password = password;
 
       if (address === null) {
@@ -102,10 +135,12 @@ export const updateSelfProfile = async (
       }
 
       if (Object.keys(data).length === 0) {
-        return transaction.user.findUniqueOrThrow({
+        const user = await transaction.user.findUniqueOrThrow({
           where: { id: userId },
           select: selfProfileSelect,
         });
+
+        return serializeSelfProfile(user);
       }
 
       const user = await transaction.user.update({
@@ -125,7 +160,7 @@ export const updateSelfProfile = async (
         });
       }
 
-      return user;
+      return serializeSelfProfile(user);
     });
 
     return res.status(200).json(updatedUser);

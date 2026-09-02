@@ -96,6 +96,11 @@ services:
       # Remetente que aparecerá nos e-mails capturados pelo Mailpit.
       EMAIL_FROM: 'Work Manager <no-reply@work-manager.local>'
 
+      # Credenciais usadas para assinar, confirmar e remover imagens de perfil.
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+
     # Volumes para a aplicação. Essencial para o live-reloading.
     volumes:
       # '.:/app' espelha o diretório atual do seu PC para a pasta /app no contêiner.

@@ -44,7 +44,9 @@ describe('Self profile', () => {
       id: user.id,
       name: user.name,
       email: user.email,
+      cpf: user.cpf,
       phoneNumber: user.phoneNumber,
+      birthDate: user.birthDate,
       profileImage: user.profileImage,
       address: null,
     });
@@ -62,6 +64,7 @@ describe('Self profile', () => {
       .send({
         name: 'Updated Name',
         phoneNumber: '(61) 99999-9999',
+        birthDate: '1994-06-15',
         address: {
           zipCode: '70000-000',
           state: 'DF',
@@ -78,6 +81,7 @@ describe('Self profile', () => {
       name: 'Updated Name',
       email: user.email,
       phoneNumber: '61999999999',
+      birthDate: '1994-06-15T00:00:00.000Z',
       address: {
         zipCode: '70000000',
         state: 'DF',
@@ -117,7 +121,7 @@ describe('Self profile', () => {
     expect(secondResponse.body.address).toBeNull();
   });
 
-  it.each(['email', 'profileId', 'currentSalary', 'employmentStatus'])(
+  it.each(['email', 'cpf', 'profileId', 'currentSalary', 'employmentStatus'])(
     'rejects the protected field %s',
     async (field) => {
       const user = await createTestUser();

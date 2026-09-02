@@ -1,8 +1,10 @@
 import { body } from 'express-validator';
+import { isValidDateOnly } from '../../utils/dateOnly';
 
 const allowedFields = new Set([
   'name',
   'phoneNumber',
+  'birthDate',
   'address',
   'currentPassword',
   'newPassword',
@@ -72,6 +74,10 @@ export const validateUpdateSelfProfile = [
     .bail()
     .matches(/^\d{10,11}$/)
     .withMessage('Phone number must have 10 or 11 digits'),
+  body('birthDate')
+    .optional({ nullable: true })
+    .custom(isValidDateOnly)
+    .withMessage('Birth date must use YYYY-MM-DD'),
   body('address')
     .optional({ nullable: true })
     .isObject()
