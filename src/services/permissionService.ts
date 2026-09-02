@@ -13,6 +13,7 @@ export const getEffectivePermissions = async (
     select: {
       profile: {
         select: {
+          fullAccess: true,
           permissions: {
             include: { permission: true },
           },
@@ -21,11 +22,27 @@ export const getEffectivePermissions = async (
       customPermissions: {
         include: { permission: true },
       },
+      systemOwnership: { select: { id: true } },
     },
   });
 
   if (!user) {
     return [];
+  }
+
+  // Se o usuário tiver acesso total ou for proprietário do sistema, retorna todas as permissões com hasPermission = true
+  if (user.profile.fullAccess || user.systemOwnership) {
+    return prisma.permission
+      .findMany({
+        select: { name: true },
+        orderBy: { id: 'asc' },
+      })
+      .then((permissions) =>
+        permissions.map((permission) => ({
+          name: permission.name,
+          hasPermission: true,
+        }))
+      );
   }
 
   const permissionsById = new Map<number, EffectivePermission>();
@@ -52,6 +69,19 @@ export const hasPermission = async (
   userId: number,
   permissionName: string
 ): Promise<boolean> => {
+  const privilegedUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      profile: { select: { fullAccess: true } },
+      systemOwnership: { select: { id: true } },
+    },
+  });
+
+  // Se o usuário tiver acesso total ou for proprietário do sistema, retorna true
+  if (privilegedUser?.profile.fullAccess || privilegedUser?.systemOwnership) {
+    return true;
+  }
+
   const permissions = await getEffectivePermissions(userId);
 
   return permissions.some(

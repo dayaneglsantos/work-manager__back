@@ -187,4 +187,67 @@ describe('Permission assignment checklists', () => {
       permission: 'read-permissions',
     });
   });
+
+  it('gives full-access profiles every permission and rejects their editing', async () => {
+    const user = await createTestUser();
+    await prisma.profile.update({
+      where: { id: user.profileId },
+      data: { fullAccess: true },
+    });
+    const permission = await createPermission();
+    const cookie = authenticatedRequest(user.id);
+
+    const listResponse = await request(app)
+      .get(`/profiles/${user.profileId}/permissions`)
+      .set('Cookie', cookie);
+    const updateResponse = await request(app)
+      .put(`/profiles/${user.profileId}/permissions`)
+      .set('Cookie', cookie)
+      .send({
+        permissions: [{ permissionId: permission.id, hasPermission: false }],
+      });
+
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.permissions).toContainEqual(
+      expect.objectContaining({
+        permissionId: permission.id,
+        hasPermission: true,
+      })
+    );
+    expect(updateResponse.status).toBe(409);
+  });
+
+  it('rejects custom permissions for full-access users and the system owner', async () => {
+    const fullAccessUser = await createTestUser();
+    await prisma.profile.update({
+      where: { id: fullAccessUser.profileId },
+      data: { fullAccess: true },
+    });
+    const permission = await createPermission();
+    const fullAccessResponse = await request(app)
+      .put(`/users/${fullAccessUser.id}/permissions`)
+      .set('Cookie', authenticatedRequest(fullAccessUser.id))
+      .send({
+        permissions: [{ permissionId: permission.id, customValue: false }],
+      });
+    const fullAccessListResponse = await request(app)
+      .get(`/users/${fullAccessUser.id}/permissions`)
+      .set('Cookie', authenticatedRequest(fullAccessUser.id));
+
+    await clearDatabase();
+    const owner = await createTestUser();
+    await grantPermissionManagement(owner.profileId);
+    const ownerPermission = await createPermission();
+    await prisma.systemOwner.create({ data: { id: 1, userId: owner.id } });
+    const ownerResponse = await request(app)
+      .put(`/users/${owner.id}/permissions`)
+      .set('Cookie', authenticatedRequest(owner.id))
+      .send({
+        permissions: [{ permissionId: ownerPermission.id, customValue: false }],
+      });
+
+    expect(fullAccessResponse.status).toBe(409);
+    expect(fullAccessListResponse.status).toBe(409);
+    expect(ownerResponse.status).toBe(409);
+  });
 });

@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
+import { EmploymentStatus } from '@prisma/client';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const emailMock = vi.hoisted(() => ({
@@ -34,7 +35,8 @@ const createUserWithProfile = async (
   profileName: string,
   email: string,
   cpf: string,
-  password: string | null
+  password: string | null,
+  employmentStatus: EmploymentStatus = EmploymentStatus.active
 ) => {
   const profile = await prisma.profile.create({
     data: { name: profileName },
@@ -46,6 +48,7 @@ const createUserWithProfile = async (
       email,
       cpf,
       password,
+      employmentStatus,
       admissionDate: new Date('2026-01-01'),
       currentPosition: 'Tester',
       currentSalary: 1,
@@ -167,6 +170,31 @@ describe('Password invitation resend', () => {
     expect(await prisma.passwordReset.count()).toBe(0);
   });
 
+  it('rejects a resend for an inactive user without a password', async () => {
+    const admin = await createUserWithProfile(
+      'Admin',
+      'admin@work-manager.local',
+      '10000000442',
+      'admin-password-hash'
+    );
+    await grantProfilePermissions(admin.profileId, ['update-users']);
+    const target = await createUserWithProfile(
+      'Funcionario',
+      'inactive@work-manager.local',
+      '10000000523',
+      null,
+      EmploymentStatus.inactive
+    );
+
+    const response = await request(app)
+      .post(`/users/${target.id}/password-invitation/resend`)
+      .set('Cookie', authCookieFor(admin.id));
+
+    expect(response.status).toBe(409);
+    expect(emailMock.sentTo).toEqual([]);
+    expect(await prisma.passwordReset.count()).toBe(0);
+  });
+
   it('keeps the previous invitation active when the new email fails', async () => {
     emailMock.shouldFail = true;
     const admin = await createUserWithProfile(
@@ -207,5 +235,27 @@ describe('Password invitation resend', () => {
     expect(
       invitations.filter(({ invalidatedAt }) => invalidatedAt)
     ).toHaveLength(1);
+  });
+
+  it('hides the system owner from user management and blocks administrative edits', async () => {
+    const owner = await createUserWithProfile(
+      'Owner',
+      'owner@work-manager.local',
+      '10000000876',
+      'owner-password-hash'
+    );
+    await prisma.systemOwner.create({ data: { id: 1, userId: owner.id } });
+
+    const listResponse = await request(app)
+      .get('/users')
+      .set('Cookie', authCookieFor(owner.id));
+    const updateResponse = await request(app)
+      .patch(`/users/${owner.id}`)
+      .set('Cookie', authCookieFor(owner.id))
+      .send({ name: 'Changed owner' });
+
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.data).toEqual([]);
+    expect(updateResponse.status).toBe(409);
   });
 });

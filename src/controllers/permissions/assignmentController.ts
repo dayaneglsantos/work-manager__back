@@ -21,7 +21,7 @@ export const getProfilePermissionList = async (
   try {
     const profile = await prisma.profile.findUnique({
       where: { id: profileId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, fullAccess: true },
     });
 
     if (!profile) {
@@ -49,7 +49,9 @@ export const getProfilePermissionList = async (
         name: permission.name,
         type: permission.type.name,
         action: permission.action.name,
-        hasPermission: permission.permissions[0]?.hasPermission ?? false,
+        hasPermission:
+          profile.fullAccess ||
+          (permission.permissions[0]?.hasPermission ?? false),
       })),
     });
   } catch (error) {
@@ -80,6 +82,10 @@ export const updateProfilePermissionList = async (
 
       if (!profile) {
         throw new Error('PROFILE_NOT_FOUND');
+      }
+
+      if (profile.fullAccess) {
+        throw new Error('FULL_ACCESS_PROFILE');
       }
 
       if (permissionCount !== permissions.length) {
@@ -118,6 +124,12 @@ export const updateProfilePermissionList = async (
         .json({ error: 'One or more permissions are invalid' });
     }
 
+    if (error instanceof Error && error.message === 'FULL_ACCESS_PROFILE') {
+      return res.status(409).json({
+        error: 'Full-access profile permissions cannot be changed',
+      });
+    }
+
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -135,12 +147,19 @@ export const getUserPermissionList = async (
       select: {
         id: true,
         name: true,
-        profile: { select: { id: true, name: true } },
+        profile: { select: { id: true, name: true, fullAccess: true } },
+        systemOwnership: { select: { id: true } },
       },
     });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.profile.fullAccess || user.systemOwnership) {
+      return res.status(409).json({
+        error: 'Permissions cannot be customized for this user',
+      });
     }
 
     const permissions = await prisma.permission.findMany({
@@ -164,7 +183,10 @@ export const getUserPermissionList = async (
     return res.status(200).json({
       user,
       permissions: permissions.map((permission) => {
-        const profileValue = permission.permissions[0]?.hasPermission ?? false;
+        const profileValue =
+          user.profile.fullAccess || Boolean(user.systemOwnership)
+            ? true
+            : (permission.permissions[0]?.hasPermission ?? false);
         const customValue =
           permission.customPermissions[0]?.hasPermission ?? null;
 
@@ -174,8 +196,14 @@ export const getUserPermissionList = async (
           type: permission.type.name,
           action: permission.action.name,
           profileValue,
-          customValue,
-          effectiveValue: customValue ?? profileValue,
+          customValue:
+            user.profile.fullAccess || user.systemOwnership
+              ? null
+              : customValue,
+          effectiveValue:
+            user.profile.fullAccess || user.systemOwnership
+              ? true
+              : (customValue ?? profileValue),
         };
       }),
     });
@@ -195,7 +223,14 @@ export const updateUserPermissionList = async (
   try {
     await prisma.$transaction(async (transaction) => {
       const [user, permissionCount] = await Promise.all([
-        transaction.user.findUnique({ where: { id: userId } }),
+        transaction.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            profile: { select: { fullAccess: true } },
+            systemOwnership: { select: { id: true } },
+          },
+        }),
         transaction.permission.count({
           where: {
             id: {
@@ -207,6 +242,10 @@ export const updateUserPermissionList = async (
 
       if (!user) {
         throw new Error('USER_NOT_FOUND');
+      }
+
+      if (user.profile.fullAccess || user.systemOwnership) {
+        throw new Error('PROTECTED_USER');
       }
 
       if (permissionCount !== permissions.length) {
@@ -251,6 +290,12 @@ export const updateUserPermissionList = async (
       return res
         .status(400)
         .json({ error: 'One or more permissions are invalid' });
+    }
+
+    if (error instanceof Error && error.message === 'PROTECTED_USER') {
+      return res.status(409).json({
+        error: 'Permissions cannot be customized for this user',
+      });
     }
 
     return res.status(500).json({ error: 'Internal Server Error' });

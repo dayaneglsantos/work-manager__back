@@ -131,7 +131,10 @@ export const createUser = async (
     };
 
     const newUser = await prisma.user.create({ data: userData });
-    const invitationSent = await sendPasswordCreationInvitation(newUser);
+    const invitationSent =
+      newUser.employmentStatus === EmploymentStatus.active
+        ? await sendPasswordCreationInvitation(newUser)
+        : false;
 
     const { password: _password, ...userWithoutPassword } = newUser;
 
@@ -161,6 +164,7 @@ export const resendPasswordCreationInvitation = async (
         name: true,
         email: true,
         password: true,
+        employmentStatus: true,
       },
     });
 
@@ -171,6 +175,12 @@ export const resendPasswordCreationInvitation = async (
     if (user.password) {
       return res.status(409).json({
         error: 'Este usuário já criou sua senha.',
+      });
+    }
+
+    if (user.employmentStatus !== EmploymentStatus.active) {
+      return res.status(409).json({
+        error: 'O convite só pode ser reenviado para um usuário ativo.',
       });
     }
 
@@ -208,6 +218,7 @@ export const getUserById = async (
         address: true,
         profile: true,
         department: true,
+        systemOwnership: { select: { id: true } },
       },
     });
 
@@ -215,11 +226,12 @@ export const getUserById = async (
       return res.status(404).json({ error: 'There is no user with this id' });
     }
 
-    const { password, ...userWithoutPassword } = user;
+    const { password, systemOwnership, ...userWithoutPassword } = user;
 
     return res.status(200).json({
       ...userWithoutPassword,
       hasPassword: password !== null,
+      isSystemOwner: Boolean(systemOwnership),
     });
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -234,6 +246,9 @@ export const getAllUsers = async (
 ): Promise<any> => {
   const { departmentId, search, employmentStatus } = req.query;
   const filters: any = {};
+
+  // Filtra apenas usuários que não são proprietários do sistema
+  filters.systemOwnership = { is: null };
 
   if (departmentId) {
     filters.departmentId = Number(departmentId);
@@ -339,6 +354,17 @@ export const partialUpdateUser = async (
 
   if (Object.keys(fieldsToUpdate).length > 0) {
     try {
+      const protectedOwner = await prisma.systemOwner.findUnique({
+        where: { userId: Number(id) },
+        select: { id: true },
+      });
+
+      if (protectedOwner) {
+        return res.status(409).json({
+          error: 'The system owner cannot be edited through user management',
+        });
+      }
+
       const isUpdatingEmploymentStatus =
         'employmentStatus' in fieldsToUpdate ||
         'statusReason' in fieldsToUpdate;
@@ -389,6 +415,19 @@ export const partialUpdateUser = async (
         },
         data: fieldsToUpdate,
       });
+
+      // Invalida convites de criação de senha pendentes se o usuário for inativado
+      if (user.employmentStatus !== EmploymentStatus.active) {
+        await prisma.passwordReset.updateMany({
+          where: {
+            userId: user.id,
+            purpose: 'passwordCreation',
+            usedAt: null,
+            invalidatedAt: null,
+          },
+          data: { invalidatedAt: new Date() },
+        });
+      }
 
       if (!user) {
         return res.status(404).json({ error: 'There is no user with this id' });
@@ -472,12 +511,36 @@ export const fullUpdateUser = async (
   };
 
   try {
+    const protectedOwner = await prisma.systemOwner.findUnique({
+      where: { userId: Number(id) },
+      select: { id: true },
+    });
+
+    if (protectedOwner) {
+      return res.status(409).json({
+        error: 'The system owner cannot be edited through user management',
+      });
+    }
+
     const user = await prisma.user.update({
       where: {
         id: Number(id),
       },
       data: fieldsToUpdate,
     });
+
+    // Invalida convites de criação de senha pendentes se o usuário for inativado
+    if (user.employmentStatus !== EmploymentStatus.active) {
+      await prisma.passwordReset.updateMany({
+        where: {
+          userId: user.id,
+          purpose: 'passwordCreation',
+          usedAt: null,
+          invalidatedAt: null,
+        },
+        data: { invalidatedAt: new Date() },
+      });
+    }
 
     if (!user) {
       return res.status(404).json({ error: 'There is no user with this id' });

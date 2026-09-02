@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 async function main() {
   // =================================== PROFILES ===================================
   const adminProfile = await prisma.profile.create({
-    data: { name: 'Admin' },
+    data: { name: 'Admin', fullAccess: true },
   });
 
   const gerenteProfile = await prisma.profile.create({
@@ -47,6 +47,9 @@ async function main() {
         },
       },
     },
+  });
+  await prisma.systemOwner.create({
+    data: { id: 1, userId: admin.id },
   });
   const gerente = await prisma.user.create({
     data: {
@@ -185,19 +188,10 @@ async function main() {
   });
 
   // =================================== PERMISSIONS CATALOG ===================================
-  const permissions = await syncPermissionCatalog(prisma);
+  await syncPermissionCatalog(prisma);
 
   // =================================== PROFILE PERMISSIONS ===================================
-  // O Admin recebe todo o catálogo para garantir o acesso inicial ao sistema.
-  await prisma.profilePermission.updateMany({
-    where: {
-      profileId: adminProfile.id,
-      permissionId: {
-        in: Array.from(permissions.values(), (permission) => permission.id),
-      },
-    },
-    data: { hasPermission: true },
-  });
+  // O perfil Admin usa fullAccess e não depende de atribuições individuais.
 
   // =================================== TAGS ===================================
   await prisma.tag.createMany({

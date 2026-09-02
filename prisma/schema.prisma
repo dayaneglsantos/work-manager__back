@@ -49,6 +49,7 @@ enum CommentType {
 model Profile {
   id          Int                 @id @default(autoincrement())
   name        String              @unique
+  fullAccess  Boolean             @default(false) @map("full_access")
   users       User[]
   permissions ProfilePermission[] // Relaciona com a tabela de permissões de perfil
 
@@ -99,8 +100,19 @@ model User {
   comments            Comment[] // Comentários feitos pelo usuário
   commentMentions     CommentMention[] // Comentários em que o usuário foi mencionado
   passwordResetTokens PasswordReset[]
+  systemOwnership     SystemOwner?
 
   @@map("users") // Mapeia o nome da tabela para "users"
+}
+
+model SystemOwner {
+  id        Int      @id @default(1)
+  userId    Int      @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_owner")
 }
 
 model Address {

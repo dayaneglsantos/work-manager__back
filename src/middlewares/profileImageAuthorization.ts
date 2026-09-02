@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { hasPermission } from '../services/permissionService';
+import prisma from '../services/prisma';
 
 // Verifica se o usuário autenticado tem permissão para atualizar a imagem de perfil do usuário alvo
 // Permissões: próprio usuário ou alguém com permissão para atualizar usuários.
@@ -22,6 +23,18 @@ export const authorizeProfileImageUpdate = async (
   }
 
   try {
+    const targetOwner = await prisma.systemOwner.findUnique({
+      where: { userId: targetUserId },
+      select: { id: true },
+    });
+
+    if (targetOwner) {
+      res.status(409).json({
+        error: 'The system owner can only change their own profile image',
+      });
+      return;
+    }
+
     if (!(await hasPermission(authenticatedUserId, 'update-users'))) {
       res.status(403).json({
         error: 'Você não tem permissão para atualizar esta imagem de perfil.',

@@ -10,6 +10,7 @@ export const TEST_PASSWORD = 'test-password-123';
 // Cada teste começa sem herdar usuários, permissões ou tokens do teste anterior.
 export const clearDatabase = async (): Promise<void> => {
   await prisma.passwordReset.deleteMany();
+  await prisma.systemOwner.deleteMany();
   await prisma.customPermission.deleteMany();
   await prisma.profilePermission.deleteMany();
   await prisma.address.deleteMany();

@@ -99,6 +99,23 @@ export const updateProfile = async (
 
   if (name) {
     try {
+      const profile = await prisma.profile.findUnique({
+        where: { id: Number(id) },
+        select: { fullAccess: true },
+      });
+
+      if (!profile) {
+        return res
+          .status(404)
+          .json({ error: 'There is no profile with this id' });
+      }
+
+      if (profile.fullAccess) {
+        return res
+          .status(409)
+          .json({ error: 'The full-access profile cannot be changed' });
+      }
+
       await prisma.profile.update({
         where: { id: Number(id) },
         data: { name: name },
@@ -120,15 +137,26 @@ export const deleteProfile = async (
   const { id } = req.params;
 
   try {
-    const profile = await prisma.profile.delete({
+    const existingProfile = await prisma.profile.findUnique({
       where: { id: Number(id) },
+      select: { fullAccess: true },
     });
 
-    if (!profile) {
+    if (!existingProfile) {
       return res
         .status(404)
         .json({ error: 'There is no profile with this id' });
     }
+
+    if (existingProfile.fullAccess) {
+      return res
+        .status(409)
+        .json({ error: 'The full-access profile cannot be deleted' });
+    }
+
+    const profile = await prisma.profile.delete({
+      where: { id: Number(id) },
+    });
 
     return res.status(201).json({ message: 'Profile deleted successfully' });
   } catch (error) {

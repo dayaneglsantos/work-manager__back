@@ -112,7 +112,7 @@ describe('Password creation', () => {
   });
 
   it('creates the first password and consumes the token', async () => {
-    const user = await createPendingUser('inactive');
+    const user = await createPendingUser();
     const invitation = await createTokenRequest(user.id);
 
     const response = await request(app)
@@ -135,6 +135,21 @@ describe('Password creation', () => {
       true
     );
     expect(stored.usedAt).not.toBeNull();
+  });
+
+  it('rejects a creation token after the account becomes inactive', async () => {
+    const user = await createPendingUser('inactive');
+    await createTokenRequest(user.id);
+
+    const response = await request(app)
+      .post('/password-creation/confirm')
+      .send({
+        passwordToken: PASSWORD_TOKEN,
+        newPassword: NEW_PASSWORD,
+        confirmPassword: NEW_PASSWORD,
+      });
+
+    expect(response.status).toBe(400);
   });
 
   it('rejects a creation token after the account already has a password', async () => {

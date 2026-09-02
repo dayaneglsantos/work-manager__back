@@ -1,4 +1,4 @@
-import { PasswordRequestPurpose } from '@prisma/client';
+import { EmploymentStatus, PasswordRequestPurpose } from '@prisma/client';
 import { Request, Response } from 'express';
 import { env } from '../config/env';
 import hashPassword from '../services/hashService';
@@ -43,6 +43,7 @@ export const verifyPasswordCreationCode = async (
       where: {
         email: normalizedEmail,
         password: null,
+        employmentStatus: EmploymentStatus.active,
       },
     });
 
@@ -119,7 +120,10 @@ export const verifyPasswordCreationCode = async (
         invalidatedAt: null,
         codeExpiresAt: { gt: now },
         codeAttempts: { lt: 5 },
-        user: { password: null },
+        user: {
+          password: null,
+          employmentStatus: EmploymentStatus.active,
+        },
       },
       data: {
         verifiedAt: now,
@@ -181,7 +185,10 @@ export const confirmPasswordCreation = async (
         verifiedAt: { not: null },
         usedAt: null,
         invalidatedAt: null,
-        user: { password: null },
+        user: {
+          password: null,
+          employmentStatus: EmploymentStatus.active,
+        },
       },
     });
 
@@ -202,7 +209,10 @@ export const confirmPasswordCreation = async (
             verifiedAt: { not: null },
             usedAt: null,
             invalidatedAt: null,
-            user: { password: null },
+            user: {
+              password: null,
+              employmentStatus: EmploymentStatus.active,
+            },
           },
           data: { usedAt: new Date() },
         });
@@ -215,6 +225,7 @@ export const confirmPasswordCreation = async (
           where: {
             id: passwordCreationRequest.userId,
             password: null,
+            employmentStatus: EmploymentStatus.active,
           },
           data: { password: hashedPassword },
         });
