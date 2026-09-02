@@ -22,6 +22,10 @@ when the test stack is stopped.
 - `auth/passwordReset.test.ts`: password-reset requests, codes, tokens,
   password validation, consumption, and artifact invalidation.
 - `auth/rateLimit.test.ts`: account and IP limits for login and recovery.
+- `permissions/assignments.test.ts`: profile and user permission checklists,
+  inheritance, custom overrides, and permission-management authorization.
+- `permissions/resourceAuthorization.test.ts`: authorization required by every
+  users, profiles, departments, tasks, and addresses route.
 - `helpers/database.ts`: isolated fixtures and database cleanup.
 - `setup.ts`: environment variables required by the test process.
 
