@@ -15,7 +15,7 @@ export const createProfile = async (
     });
 
     if (existingProfile) {
-      return res.status(400).json({
+      return res.status(409).json({
         error: 'There is already a registered profile with this name.',
       });
     }
@@ -80,9 +80,17 @@ export const getAllProfiles = async (
   res: Response
 ): Promise<any> => {
   try {
-    const profiles = await prisma.profile.findMany();
+    const profiles = await prisma.profile.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { users: true } } },
+    });
 
-    return res.status(200).json(profiles);
+    return res.status(200).json(
+      profiles.map(({ _count, ...profile }) => ({
+        ...profile,
+        userCount: _count.users,
+      }))
+    );
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -97,34 +105,50 @@ export const updateProfile = async (
   const { id } = req.params;
   const { name } = req.body;
 
-  if (name) {
-    try {
-      const profile = await prisma.profile.findUnique({
-        where: { id: Number(id) },
+  try {
+    const profileId = Number(id);
+    const [profile, profileWithSameName] = await Promise.all([
+      // Verifica se o perfil existe
+      prisma.profile.findUnique({
+        where: { id: profileId },
         select: { fullAccess: true },
-      });
+      }),
+      // Verifica se já existe um perfil com o mesmo nome, excluindo o perfil atual
+      prisma.profile.findFirst({
+        where: {
+          name,
+          id: { not: profileId },
+        },
+        select: { id: true },
+      }),
+    ]);
 
-      if (!profile) {
-        return res
-          .status(404)
-          .json({ error: 'There is no profile with this id' });
-      }
-
-      if (profile.fullAccess) {
-        return res
-          .status(409)
-          .json({ error: 'The full-access profile cannot be changed' });
-      }
-
-      await prisma.profile.update({
-        where: { id: Number(id) },
-        data: { name: name },
-      });
-
-      return res.status(201).json({ message: 'Profile updated successfully' });
-    } catch (error) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+    if (!profile) {
+      return res
+        .status(404)
+        .json({ error: 'There is no profile with this id' });
     }
+
+    if (profile.fullAccess) {
+      return res
+        .status(409)
+        .json({ error: 'The full-access profile cannot be changed' });
+    }
+
+    if (profileWithSameName) {
+      return res.status(409).json({
+        error: 'There is already a registered profile with this name.',
+      });
+    }
+
+    const updatedProfile = await prisma.profile.update({
+      where: { id: profileId },
+      data: { name },
+    });
+
+    return res.status(200).json(updatedProfile);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -139,7 +163,10 @@ export const deleteProfile = async (
   try {
     const existingProfile = await prisma.profile.findUnique({
       where: { id: Number(id) },
-      select: { fullAccess: true },
+      select: {
+        fullAccess: true,
+        _count: { select: { users: true } }, // Conta quantos usuários estão associados a este perfil
+      },
     });
 
     if (!existingProfile) {
@@ -154,11 +181,22 @@ export const deleteProfile = async (
         .json({ error: 'The full-access profile cannot be deleted' });
     }
 
-    const profile = await prisma.profile.delete({
-      where: { id: Number(id) },
-    });
+    if (existingProfile._count.users > 0) {
+      return res.status(409).json({
+        error: 'Profiles assigned to users cannot be deleted',
+      });
+    }
 
-    return res.status(201).json({ message: 'Profile deleted successfully' });
+    await prisma.$transaction([
+      prisma.profilePermission.deleteMany({
+        where: { profileId: Number(id) },
+      }),
+      prisma.profile.delete({
+        where: { id: Number(id) },
+      }),
+    ]);
+
+    return res.status(204).send();
   } catch (error) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
