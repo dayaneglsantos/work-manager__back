@@ -78,12 +78,6 @@ const cases: AuthorizationCase[] = [
     body: { name: 'Department' },
   },
   {
-    method: 'put',
-    path: '/departments/1',
-    permission: 'update-departments',
-    body: { name: 'Department' },
-  },
-  {
     method: 'delete',
     path: '/departments/1',
     permission: 'delete-departments',

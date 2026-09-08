@@ -82,7 +82,7 @@ model User {
   profileId          Int              @map("profile_id")
   profile            Profile          @relation(fields: [profileId], references: [id])
   departmentId       Int?             @map("department_id")
-  department         Department?      @relation("UserDepartment", fields: [departmentId], references: [id])
+  department         Department?      @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
   currentSalary      Float            @map("current_salary")
   admissionDate      DateTime         @db.Date @map("admission_date")
   currentPosition    String           @map("current_position")

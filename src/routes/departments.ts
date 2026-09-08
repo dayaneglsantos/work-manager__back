@@ -5,10 +5,10 @@ import {
   partialUpdateDepartment,
   deleteDepartment,
   getAllDepartments,
-  fullUpdateDepartment,
 } from '../controllers/departmentController';
 import {
   validateCreateDepartment,
+  validateDepartmentId,
   validateUpdateDepartment,
 } from '../middlewares/validators/departmentValidator';
 import { validationHandler } from '../middlewares/validationHandler';
@@ -18,6 +18,8 @@ const router = express.Router();
 
 router.get(
   '/departments/:id',
+  validateDepartmentId,
+  validationHandler,
   authorizePermission('read-departments'),
   getDepartment
 );
@@ -28,17 +30,11 @@ router.get(
 );
 router.patch(
   '/departments/:id',
+  validateDepartmentId,
   validateUpdateDepartment,
   validationHandler,
   authorizePermission('update-departments'),
   partialUpdateDepartment
-);
-router.put(
-  '/departments/:id',
-  validateUpdateDepartment,
-  validationHandler,
-  authorizePermission('update-departments'),
-  fullUpdateDepartment
 );
 router.post(
   '/departments',
@@ -49,6 +45,8 @@ router.post(
 );
 router.delete(
   '/departments/:id',
+  validateDepartmentId,
+  validationHandler,
   authorizePermission('delete-departments'),
   deleteDepartment
 );

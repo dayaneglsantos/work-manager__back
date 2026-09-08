@@ -14,6 +14,8 @@ export const clearDatabase = async (): Promise<void> => {
   await prisma.customPermission.deleteMany();
   await prisma.profilePermission.deleteMany();
   await prisma.address.deleteMany();
+  await prisma.user.updateMany({ data: { departmentId: null } });
+  await prisma.department.deleteMany();
   await prisma.user.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.permissionAction.deleteMany();

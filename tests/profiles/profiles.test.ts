@@ -88,9 +88,7 @@ describe('Profile management', () => {
       data: [{ name: 'Zeladoria' }, { name: 'Atendimento' }],
     });
 
-    const response = await request(app)
-      .get('/profiles')
-      .set('Cookie', cookie);
+    const response = await request(app).get('/profiles').set('Cookie', cookie);
 
     expect(response.status).toBe(200);
     expect(response.body.map(({ name }: { name: string }) => name)).toEqual(
@@ -98,7 +96,56 @@ describe('Profile management', () => {
     );
 
     const names = response.body.map(({ name }: { name: string }) => name);
-    expect(names).toEqual([...names].sort((first, second) => first.localeCompare(second)));
+    expect(names).toEqual(
+      [...names].sort((first, second) => first.localeCompare(second))
+    );
+  });
+
+  it('counts users in every employment status, including the system owner in Admin', async () => {
+    const { user, cookie } = await createProfileManager();
+    const emptyProfile = await prisma.profile.create({
+      data: { name: 'Sem usuários' },
+    });
+    const admin = await prisma.profile.create({
+      data: { name: 'Admin', fullAccess: true },
+    });
+    const statuses = ['active', 'inactive', 'terminated', 'resigned'] as const;
+
+    for (const [index, employmentStatus] of statuses.entries()) {
+      await prisma.user.create({
+        data: {
+          name: `Colaborador ${employmentStatus}`,
+          email: `profile-count-${index}@work-manager.local`,
+          cpf: `2000000000${index}`,
+          admissionDate: new Date('2024-01-01'),
+          employmentStatus,
+          currentPosition: 'Tester',
+          currentSalary: 1,
+          profileId: user.profileId,
+        },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { profileId: admin.id },
+    });
+    await prisma.systemOwner.create({ data: { id: 1, userId: user.id } });
+
+    const response = await request(app).get('/profiles').set('Cookie', cookie);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: user.profileId, userCount: 4 }),
+        expect.objectContaining({
+          id: admin.id,
+          fullAccess: true,
+          userCount: 1,
+        }),
+        expect.objectContaining({ id: emptyProfile.id, userCount: 0 }),
+      ])
+    );
   });
 
   it('updates a regular profile and returns the updated resource', async () => {
@@ -129,7 +176,9 @@ describe('Profile management', () => {
       .send({ name: 'Existente' });
 
     expect(response.status).toBe(409);
-    expect(await prisma.profile.findUnique({ where: { id: profile.id } })).toMatchObject({
+    expect(
+      await prisma.profile.findUnique({ where: { id: profile.id } })
+    ).toMatchObject({
       name: 'Editável',
     });
   });
@@ -178,9 +227,11 @@ describe('Profile management', () => {
       .set('Cookie', cookie);
 
     expect(response.status).toBe(204);
-    expect(await prisma.profile.findUnique({ where: { id: profileId } })).toBeNull();
     expect(
-      await prisma.profilePermission.count({ where: { profileId } })
-    ).toBe(0);
+      await prisma.profile.findUnique({ where: { id: profileId } })
+    ).toBeNull();
+    expect(await prisma.profilePermission.count({ where: { profileId } })).toBe(
+      0
+    );
   });
 });
