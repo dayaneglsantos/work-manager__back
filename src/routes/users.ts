@@ -3,6 +3,7 @@ import {
   createUser,
   getUserById,
   getAllUsers,
+  getUsersSimpleList,
   partialUpdateUser,
   fullUpdateUser,
   resendPasswordCreationInvitation,
@@ -10,6 +11,7 @@ import {
 import {
   validateCreateUser,
   validateGetUsers,
+  validateGetUserOptions,
   validateUpdateUser,
   validateUserId,
 } from '../middlewares/validators/userValidator';
@@ -47,6 +49,12 @@ router.post(
   validationHandler,
   authorizePermission('create-users'),
   createUser
+);
+router.get(
+  '/users/simple',
+  validateGetUserOptions,
+  validationHandler,
+  getUsersSimpleList
 );
 router.get('/users/:id', authorizePermission('read-users'), getUserById);
 router.get(

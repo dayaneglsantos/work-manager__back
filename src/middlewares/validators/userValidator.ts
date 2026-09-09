@@ -70,6 +70,30 @@ export const validateGetUsers = [
     .withMessage('Invalid employment status'),
 ];
 
+export const validateGetUserOptions = [
+  query('search')
+    .isString()
+    .withMessage('Search must be a string')
+    .bail()
+    .trim()
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Search must contain between 3 and 100 characters'),
+  query('employmentStatus')
+    .optional()
+    .isIn(employmentStatuses)
+    .withMessage('Invalid employment status'),
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer')
+    .toInt(),
+  query('pageSize')
+    .optional()
+    .isInt({ min: 1, max: 50 })
+    .withMessage('Page size must contain between 1 and 50 items')
+    .toInt(),
+];
+
 export const validateCreateUser = [
   body('name')
     .notEmpty()

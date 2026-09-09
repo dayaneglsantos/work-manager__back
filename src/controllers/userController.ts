@@ -325,6 +325,58 @@ export const getAllUsers = async (
 
 // ----------------------------------------------------------------
 
+export const getUsersSimpleList = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  const search = String(req.query.search);
+  const employmentStatus =
+    (req.query.employmentStatus as EmploymentStatus | undefined) ??
+    EmploymentStatus.active; // Recebe o status de emprego da query ou define como 'active' por padrão
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 20);
+  const skip = (page - 1) * pageSize; // Quantidade de registros a pular para a paginação
+  const where = {
+    systemOwnership: { is: null },
+    employmentStatus,
+    name: { contains: search },
+  };
+
+  try {
+    const [totalCount, users] = await prisma.$transaction([
+      prisma.user.count({ where }), // Conta o total de usuários que correspondem aos filtros
+      prisma.user.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: [{ name: 'asc' }],
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          employmentStatus: true,
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      data: users,
+      meta: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+        hasNextPage: skip + users.length < totalCount,
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// ----------------------------------------------------------------
+
 export const partialUpdateUser = async (
   req: Request,
   res: Response
